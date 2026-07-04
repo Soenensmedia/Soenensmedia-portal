@@ -1,0 +1,74 @@
+import { state, STATUS_ORDER, STATUS_LABELS, fmtDate } from './state.js';
+import { escapeHtml } from './util.js';
+import { createProject } from './data.js';
+import { openModal, closeModal } from './modal.js';
+import { openProjectDetail } from './projectDetail.js';
+import { showToast } from './toast.js';
+
+export function renderDashboard() {
+  const container = document.getElementById('kanban-container');
+  container.innerHTML = STATUS_ORDER.map((status) => {
+    const projects = state.projects.filter((p) => p.status === status);
+    return `
+      <div class="kanban-col" data-status="${status}">
+        <div class="kanban-col-title"><span>${STATUS_LABELS[status]}</span><span class="kanban-col-count">${projects.length}</span></div>
+        ${projects.map(cardHtml).join('')}
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.project-card').forEach((el) => {
+    el.addEventListener('click', () => openProjectDetail(el.dataset.id));
+  });
+}
+
+function cardHtml(p) {
+  const isDone = p.status === 'afgerond' || p.status === 'verzonden';
+  const overdue = p.deadline && !isDone && new Date(p.deadline) < new Date(new Date().toDateString());
+  return `
+    <div class="project-card" data-id="${p.id}">
+      <div class="client">${escapeHtml(p.client_name)}</div>
+      <div class="title">${escapeHtml(p.title)}</div>
+      ${p.deadline ? `<div class="deadline ${overdue ? 'overdue' : ''}">Deadline: ${fmtDate(new Date(p.deadline))}</div>` : ''}
+    </div>`;
+}
+
+export function openNewProjectModal() {
+  openModal(`
+    <div class="modal-header"><h2>Nieuwe opdracht</h2></div>
+    <form id="project-form">
+      <div class="field"><label>Klant</label><input type="text" id="pf-client" required></div>
+      <div class="field"><label>Titel</label><input type="text" id="pf-title" required></div>
+      <div class="field-row">
+        <div class="field"><label>Status</label>
+          <select id="pf-status">${STATUS_ORDER.map((s) => `<option value="${s}">${STATUS_LABELS[s]}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Deadline</label><input type="date" id="pf-deadline"></div>
+      </div>
+      <div class="field"><label>Notities</label><textarea id="pf-notes" rows="3"></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="pf-cancel">Annuleren</button>
+        <button type="submit" class="btn btn-red">Toevoegen</button>
+      </div>
+    </form>
+  `);
+  document.getElementById('pf-cancel').addEventListener('click', closeModal);
+  document.getElementById('project-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      client_name: document.getElementById('pf-client').value.trim(),
+      title: document.getElementById('pf-title').value.trim(),
+      status: document.getElementById('pf-status').value,
+      deadline: document.getElementById('pf-deadline').value || null,
+      notes: document.getElementById('pf-notes').value.trim() || null,
+    };
+    try {
+      const created = await createProject(payload);
+      state.projects.unshift(created);
+      closeModal();
+      renderDashboard();
+      showToast('Opdracht toegevoegd');
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+}

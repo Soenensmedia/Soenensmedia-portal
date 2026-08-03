@@ -173,3 +173,25 @@ Wanneer je de status van een project met een gekoppelde klant wijzigt (via het d
 **4. Testen:** wijzig de status van een opdracht die al aan een klant gekoppeld is (via het detailvenster of drag-and-drop) → je zou een toast "Klant per mail verwittigd" moeten zien, en de klant zou de mail moeten ontvangen.
 
 > Als er iets misloopt (bv. de functie is nog niet aangemaakt), zie je gewoon een foutmelding als toast — dit blokkeert nooit het gewoon opslaan van je wijziging zelf.
+
+## Fase 6 — Financieel dashboard (nieuw)
+
+Nieuw tabblad **"Financiën"** — enkel zichtbaar voor jou (admin), een klant-account kan dit nooit zien. Dit is een volledige poort van je bestaande `~/Desktop/Financieel-Dashboard.html`: Dashboard (kerncijfers), BTW, Facturen, Kosten, Projecten, Aankopen en Instellingen — nu live gesynchroniseerd via Supabase i.p.v. enkel lokaal op 1 toestel.
+
+> De grafieken van de oude tool zitten er bewust nog niet in (enkel de cijfers) — kan later als aparte, kleine uitbreiding als je dat wil.
+
+### Eenmalig instellen
+
+Voer [`sql/006_financien.sql`](sql/006_financien.sql) uit in de SQL Editor.
+
+### Je bestaande cijfers overzetten
+
+1. Open je **huidige** `Financieel-Dashboard.html` → tab **Instellingen** → **"Exporteer back-up"** → dit downloadt een `.json`-bestand met al je facturen/kosten/projecten/aankopen.
+2. In het portaal: **Financiën → Instellingen → "Importeer back-up (van oude tool)"** → kies dat bestand.
+3. Bevestig — dit **voegt** de data toe (overschrijft niets), dus doe dit maar 1 keer om dubbels te vermijden.
+
+### Wat er anders is dan de oude tool
+
+- **Projecten** in dit Financiën-tabblad zijn iets anders dan de "opdrachten" op je Dashboard-tabblad: dit hier volgt de facturatie (idee → te factureren → gefactureerd → betaald), je Dashboard volgt de productie (nieuw → shooten → ... → afgerond). Bewust apart gehouden.
+- Facturen uploaden bij een financieel project werkt zoals voorheen (bekijken/verwijderen via het tabelletje).
+- Er is ook een **"Exporteer back-up"**-knop (leest nu uit het portaal zelf) voor gewoon gemoedsrust — los van de eenmalige import hierboven.

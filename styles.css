@@ -334,6 +334,46 @@ table.log-table tr:last-child td { border-bottom: none; }
 .deliverables-box h3 { margin-bottom: 6px; }
 .deliverables-box p { font-size: 13px; color: var(--text-dim); white-space: pre-line; }
 
+/* ══════════ FINANCIËN ══════════ */
+.fin-subnav { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.fin-subtab-btn {
+  background: transparent; color: var(--text-dim);
+  font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 6px;
+}
+.fin-subtab-btn.active { background: var(--red); color: #fff; }
+
+.stat-card .stat-sub { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+.stat-card.btw-owe { border-color: #4a1e1e; }
+.stat-card.btw-owe .stat-value { color: #e07070; }
+.stat-card.btw-refund { border-color: #1e5a30; }
+.stat-card.btw-refund .stat-value { color: #6fe08a; }
+
+.badge-status {
+  display: inline-block; font-size: 11px; padding: 4px 10px; border-radius: 20px;
+  background: var(--paneld); border: 1px solid var(--line); color: var(--text-dim);
+}
+.badge-status.betaald, .badge-status.gefactureerd { background: #123a1e; border-color: #1e5a30; color: #6fe08a; }
+.badge-status.open, .badge-status.verlanglijst { background: #2a2410; border-color: #5a4d1e; color: #e0c570; }
+.badge-status.idee { background: var(--paneld); border-color: var(--line); color: var(--text-dim); }
+.badge-status.te-factureren { background: #1a2a3a; border-color: #1e3e5a; color: #70b0e0; }
+
+.badge-advies { display: inline-block; font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.badge-advies.verstandig { background: #123a1e; color: #6fe08a; }
+.badge-advies.opgelet { background: #2a2410; color: #e0c570; }
+.badge-advies.wachten { background: #2a1414; color: #e07070; }
+
+.hint-green { color: #6fe08a; font-size: 11px; }
+.hint-dim { color: var(--text-faint); font-size: 11px; }
+
+.fin-vrije-ruimte-banner {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: var(--text-dim); line-height: 1.6;
+}
+.fin-vrije-ruimte-banner strong { color: #fff; font-size: 15px; }
+
+.fin-upload-label { color: var(--red); font-size: 12px; cursor: pointer; }
+.fin-upload-label:hover { opacity: .8; }
+
 @media (max-width: 720px) {
   main { padding: 14px; }
   .topbar { padding: 10px 14px; }

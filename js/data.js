@@ -104,3 +104,80 @@ export const deletePhoto = async (projectId, filename) => {
   const { error } = await sb.storage.from(PHOTOS_BUCKET).remove([`${projectId}/${filename}`]);
   if (error) throw error;
 };
+
+// ── financiën (enkel admin) ──────────────────────────────
+export const fetchFinFacturen = () =>
+  sb.from('fin_facturen').select('*').order('datum', { ascending: false }).then(unwrap);
+export const createFinFactuur = (payload) =>
+  sb.from('fin_facturen').insert(payload).select().single().then(unwrap);
+export const updateFinFactuur = (id, payload) =>
+  sb.from('fin_facturen').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteFinFactuur = (id) =>
+  sb.from('fin_facturen').delete().eq('id', id).then(unwrap);
+
+export const fetchFinKosten = () =>
+  sb.from('fin_kosten').select('*').order('datum', { ascending: false }).then(unwrap);
+export const createFinKost = (payload) =>
+  sb.from('fin_kosten').insert(payload).select().single().then(unwrap);
+export const updateFinKost = (id, payload) =>
+  sb.from('fin_kosten').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteFinKost = (id) =>
+  sb.from('fin_kosten').delete().eq('id', id).then(unwrap);
+
+export const fetchFinProjecten = () =>
+  sb.from('fin_projecten').select('*').order('naam').then(unwrap);
+export const createFinProject = (payload) =>
+  sb.from('fin_projecten').insert(payload).select().single().then(unwrap);
+export const updateFinProject = (id, payload) =>
+  sb.from('fin_projecten').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteFinProject = (id) =>
+  sb.from('fin_projecten').delete().eq('id', id).then(unwrap);
+
+export const fetchFinAankopen = () =>
+  sb.from('fin_aankopen').select('*').then(unwrap);
+export const createFinAankoop = (payload) =>
+  sb.from('fin_aankopen').insert(payload).select().single().then(unwrap);
+export const updateFinAankoop = (id, payload) =>
+  sb.from('fin_aankopen').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteFinAankoop = (id) =>
+  sb.from('fin_aankopen').delete().eq('id', id).then(unwrap);
+
+export const fetchFinSettings = async () => {
+  const { data: { user } } = await sb.auth.getUser();
+  const { data, error } = await sb.from('fin_settings').select('*').eq('user_id', user.id).maybeSingle();
+  if (error) throw error;
+  return data;
+};
+export const saveFinSettings = (payload) =>
+  sb.from('fin_settings').upsert(payload, { onConflict: 'user_id' }).select().single().then(unwrap);
+
+export const fetchBtwSetAside = async (periodKey) => {
+  const { data, error } = await sb.from('fin_btw_set_aside').select('*').eq('period_key', periodKey).maybeSingle();
+  if (error) throw error;
+  return data;
+};
+export const saveBtwSetAside = (periodKey, setAside) =>
+  sb.from('fin_btw_set_aside')
+    .upsert({ period_key: periodKey, set_aside: setAside }, { onConflict: 'user_id,period_key' })
+    .select().single().then(unwrap);
+
+// ── financiën: factuur-bestand bij een financieel project ─
+const FIN_FACTUREN_BUCKET = 'fin-facturen';
+
+export const uploadFinFactuurFile = async (projectId, file) => {
+  const path = `${projectId}/${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(FIN_FACTUREN_BUCKET).upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+};
+
+export const getFinFactuurUrl = async (path) => {
+  const { data, error } = await sb.storage.from(FIN_FACTUREN_BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
+  if (error) throw error;
+  return data.signedUrl;
+};
+
+export const deleteFinFactuurFile = async (path) => {
+  const { error } = await sb.storage.from(FIN_FACTUREN_BUCKET).remove([path]);
+  if (error) throw error;
+};

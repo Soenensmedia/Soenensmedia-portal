@@ -1,4 +1,4 @@
-import { signIn, signUp, signOut, onAuthChange } from './auth.js';
+import { signIn, signOut, onAuthChange } from './auth.js';
 import { state } from './state.js';
 import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
@@ -12,19 +12,6 @@ const appShell = document.getElementById('app-shell');
 const clientShell = document.getElementById('client-shell');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
-const loginToggleLink = document.getElementById('login-toggle-link');
-const loginToggleText = document.getElementById('login-toggle-text');
-const loginSubmit = document.getElementById('login-submit');
-
-let mode = 'signin';
-
-loginToggleLink.addEventListener('click', () => {
-  mode = mode === 'signin' ? 'signup' : 'signin';
-  loginSubmit.textContent = mode === 'signin' ? 'Inloggen' : 'Account aanmaken';
-  loginToggleText.textContent = mode === 'signin' ? 'Nog geen account?' : 'Al een account?';
-  loginToggleLink.textContent = mode === 'signin' ? 'Account aanmaken' : 'Inloggen';
-  loginError.textContent = '';
-});
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -32,14 +19,7 @@ loginForm.addEventListener('submit', async (e) => {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   try {
-    if (mode === 'signin') {
-      await signIn(email, password);
-    } else {
-      await signUp(email, password);
-      loginError.textContent = 'Account aangemaakt. Bevestig eventueel je e-mail en log daarna in.';
-      mode = 'signin';
-      loginSubmit.textContent = 'Inloggen';
-    }
+    await signIn(email, password);
   } catch (err) {
     loginError.textContent = err.message;
   }

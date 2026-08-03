@@ -12,12 +12,6 @@ export async function signIn(email, password) {
   return data.session;
 }
 
-export async function signUp(email, password) {
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) throw error;
-  return data.session;
-}
-
 export async function signOut() {
   await sb.auth.signOut();
   state.user = null;

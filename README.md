@@ -140,3 +140,36 @@ Vanaf nu faalt elke poging tot zelf-registratie — accounts bestaan enkel nog a
 2. Vul een e-mail en wachtwoord in → **Create user**.
 3. Geef die inloggegevens door aan de betrokken persoon (klant), of gebruik ze zelf om in te loggen.
 4. Nieuwe accounts krijgen automatisch de rol "client" (zien niets tot je ze aan een project koppelt) — voor jezelf moet je dus nog steeds de `update profiles set role = 'admin' where email = '...'`-regel uit Fase 2 uitvoeren.
+
+## Fase 5 — Klantenoverzicht, statusmail & drag-and-drop (nieuw)
+
+### Klantenoverzicht
+
+Nieuw tabblad **"Klanten"** naast Dashboard/Agenda/Uren — een overzicht van al je klant-accounts en aan welk(e) project(en) ze gekoppeld zijn. Klik op een project-naam bij een klant om dat project meteen te openen. Geen extra setup nodig.
+
+### Drag-and-drop op het dashboard
+
+Je kan een opdracht-kaartje nu gewoon **verslepen** naar een andere kolom om de status te wijzigen, zonder het detailvenster te openen. Werkt enkel op laptop/desktop (slepen wordt niet ondersteund in mobiele browsers) — op je GSM blijft de bestaande manier (kaartje aanklikken → status wijzigen → opslaan) gewoon werken.
+
+### Automatische e-mail bij statuswijziging
+
+Wanneer je de status van een project met een gekoppelde klant wijzigt (via het detailvenster óf via drag-and-drop), krijgt die klant automatisch een e-mail met de nieuwe status. Dit vraagt een eenmalige, iets technischere setup:
+
+**1. Nieuwe Brevo API-key aanmaken** (dit is een *andere* sleutel dan de SMTP-key van eerder):
+   - Brevo → **Settings → SMTP & API → API Keys** tab
+   - **Generate a new API key** → kopieer meteen (ook hier: maar 1 keer zichtbaar)
+
+**2. Edge Function aanmaken in Supabase:**
+   - Supabase Dashboard → **Edge Functions** (linkermenu) → nieuwe functie
+   - Naam: `notify-status-change`
+   - Plak de volledige inhoud van [`supabase/functions/notify-status-change/index.ts`](supabase/functions/notify-status-change/index.ts) uit deze map
+   - **Deploy**
+
+**3. De Brevo-sleutel geheim toevoegen:**
+   - In diezelfde Edge Functions-sectie → **Manage secrets**
+   - Nieuwe secret: naam `BREVO_API_KEY`, waarde = de key uit stap 1
+   - Opslaan
+
+**4. Testen:** wijzig de status van een opdracht die al aan een klant gekoppeld is (via het detailvenster of drag-and-drop) → je zou een toast "Klant per mail verwittigd" moeten zien, en de klant zou de mail moeten ontvangen.
+
+> Als er iets misloopt (bv. de functie is nog niet aangemaakt), zie je gewoon een foutmelding als toast — dit blokkeert nooit het gewoon opslaan van je wijziging zelf.

@@ -66,6 +66,15 @@ export const fetchProjectFeedback = (projectId) =>
 export const createFeedback = (projectId, message) =>
   sb.from('project_feedback').insert({ project_id: projectId, message }).select().single().then(unwrap);
 
+export const fetchClientProfiles = () =>
+  sb.from('profiles').select('*').eq('role', 'client').order('created_at', { ascending: false }).then(unwrap);
+
+export const notifyStatusChange = (projectId) =>
+  sb.functions.invoke('notify-status-change', { body: { projectId } }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
+  });
+
 // ── fotogalerij ─────────────────────────────────────────
 const PHOTOS_BUCKET = 'project-photos';
 const SIGNED_URL_TTL = 4 * 60 * 60; // 4 uur

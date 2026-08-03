@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -129,6 +129,7 @@ export function openProjectDetail(id) {
       client_brief: document.getElementById('pd-client-brief').value.trim() || null,
       deliverables: document.getElementById('pd-deliverables').value.trim() || null,
     };
+    const statusChanged = payload.status !== p.status;
     try {
       const updated = await updateProject(id, payload);
       const idx = state.projects.findIndex((x) => x.id === id);
@@ -138,6 +139,12 @@ export function openProjectDetail(id) {
       showToast('Opdracht bijgewerkt');
     } catch (err) {
       showToast(err.message, true);
+      return;
+    }
+    if (statusChanged && p.client_user_id) {
+      notifyStatusChange(id)
+        .then(() => showToast('Klant per mail verwittigd'))
+        .catch((err) => showToast('Kon klant niet mailen: ' + err.message, true));
     }
   });
 

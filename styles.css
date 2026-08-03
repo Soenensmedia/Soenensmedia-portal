@@ -133,15 +133,17 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 
 /* ══════════ DASHBOARD ══════════ */
 .kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-.kanban-col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 80px; }
+.kanban-col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 80px; transition: background .12s, border-color .12s; }
+.kanban-col.drag-over { background: #1a1010; border-color: var(--red); }
 .kanban-col-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 10px; display: flex; justify-content: space-between; }
 .kanban-col-count { color: var(--text-faint); }
 
 .project-card {
   background: var(--paneld); border: 1px solid var(--line); border-radius: 6px;
-  padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+  padding: 10px 12px; margin-bottom: 8px; cursor: grab;
 }
 .project-card:hover { border-color: #333; }
+.project-card:active { cursor: grabbing; }
 .project-card .client { font-size: 10px; color: var(--red); text-transform: uppercase; letter-spacing: .05em; }
 .project-card .title { font-size: 13px; color: var(--text); margin-top: 2px; }
 .project-card .deadline { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
@@ -210,6 +212,21 @@ table.log-table tr:last-child td { border-bottom: none; }
 .empty-note { color: var(--text-faint); font-size: 12px; padding: 8px 0; }
 
 .fab { position: fixed; bottom: 26px; right: 26px; background: var(--red); color: #fff; width: 52px; height: 52px; border-radius: 50%; font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(224,53,53,.4); }
+
+/* ══════════ KLANTENOVERZICHT (ADMIN) ══════════ */
+.client-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 18px; margin-bottom: 10px;
+}
+.client-row-email { font-size: 14px; color: #fff; font-weight: 500; }
+.client-row-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.client-row-projects { display: flex; gap: 8px; flex-wrap: wrap; }
+.client-row-project {
+  background: var(--paneld); border: 1px solid var(--line); color: var(--text);
+  font-size: 12px; padding: 6px 12px; border-radius: 20px; cursor: pointer;
+}
+.client-row-project:hover { border-color: var(--red); color: #fff; }
 
 /* ══════════ KLANTENPORTAAL ══════════ */
 .client-project-card {

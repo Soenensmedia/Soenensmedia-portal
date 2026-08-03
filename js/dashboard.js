@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml } from './util.js';
-import { createProject } from './data.js';
+import { createProject, updateProject, notifyStatusChange } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
@@ -18,14 +18,50 @@ export function renderDashboard() {
 
   container.querySelectorAll('.project-card').forEach((el) => {
     el.addEventListener('click', () => openProjectDetail(el.dataset.id));
+    el.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', el.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
   });
+
+  container.querySelectorAll('.kanban-col').forEach((col) => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', (e) => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      handleDrop(e.dataTransfer.getData('text/plain'), col.dataset.status);
+    });
+  });
+}
+
+async function handleDrop(projectId, newStatus) {
+  const p = state.projects.find((x) => x.id === projectId);
+  if (!p || p.status === newStatus) return;
+  try {
+    const updated = await updateProject(projectId, { status: newStatus });
+    const idx = state.projects.findIndex((x) => x.id === projectId);
+    state.projects[idx] = updated;
+    renderDashboard();
+    showToast('Status gewijzigd');
+    if (p.client_user_id) {
+      notifyStatusChange(projectId)
+        .then(() => showToast('Klant per mail verwittigd'))
+        .catch((err) => showToast('Kon klant niet mailen: ' + err.message, true));
+    }
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 function cardHtml(p) {
   const isDone = p.status === 'afgerond' || p.status === 'verzonden';
   const overdue = p.deadline && !isDone && new Date(p.deadline) < new Date(new Date().toDateString());
   return `
-    <div class="project-card" data-id="${p.id}">
+    <div class="project-card" data-id="${p.id}" draggable="true">
       <div class="client">${escapeHtml(p.client_name)}</div>
       <div class="title">${escapeHtml(p.title)}</div>
       ${p.deadline ? `<div class="deadline ${overdue ? 'overdue' : ''}">Deadline: ${fmtDate(new Date(p.deadline))}</div>` : ''}

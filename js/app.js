@@ -4,6 +4,7 @@ import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile } from '.
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
+import { renderClients } from './clients.js';
 import { renderClientView } from './clientView.js';
 import { showToast } from './toast.js';
 
@@ -50,6 +51,7 @@ function switchView(view) {
   if (view === 'dashboard') renderDashboard();
   if (view === 'agenda') renderAgenda();
   if (view === 'uren') renderUren();
+  if (view === 'clients') renderClients();
 }
 
 function showLoginView() {

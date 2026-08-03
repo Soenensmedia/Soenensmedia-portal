@@ -1,4 +1,6 @@
-# SoenensMedia Portaal — Setup
+# SoenensMedia Portaal
+
+## Setup
 
 Dit portaal is een simpele webapp (geen installatie nodig) met:
 - **Dashboard** — overzicht van al je opdrachten per status, toevoegen/verwijderen/bewerken

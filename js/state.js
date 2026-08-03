@@ -33,6 +33,7 @@ export const state = {
   projects: [],
   events: [],
   timeEntries: [],
+  clients: [],
   feedback: [],
   currentView: 'dashboard',
   weekStart: startOfWeek(new Date()),

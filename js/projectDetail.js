@@ -27,6 +27,12 @@ export function openProjectDetail(id) {
         <div class="field"><label>Deadline</label><input type="date" id="pd-deadline" value="${p.deadline ?? ''}"></div>
       </div>
       <div class="field"><label>Notities</label><textarea id="pd-notes" rows="3">${escapeHtml(p.notes ?? '')}</textarea></div>
+      <div class="field"><label>Klant (uit klantenlijst)</label>
+        <select id="pd-client-id">
+          <option value="">— Geen —</option>
+          ${state.clients.map((c) => `<option value="${c.id}" ${p.client_id === c.id ? 'selected' : ''}>${escapeHtml(c.naam)}</option>`).join('')}
+        </select>
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-danger" id="pd-delete">Verwijderen</button>
         <div class="modal-actions-right">
@@ -68,6 +74,17 @@ export function openProjectDetail(id) {
         <button type="button" class="btn btn-ghost btn-small" id="pd-photo-upload">Uploaden</button>
       </div>
       <div class="photo-grid" id="pd-photo-grid"><div class="empty-note">Laden...</div></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Footage / back-up</h3>
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="pd-archived" style="width:auto;" ${p.archived ? 'checked' : ''}>
+          Gearchiveerd
+        </label>
+      </div>
+      <div class="field"><label>Opslaglocatie</label><input type="text" id="pd-storage-location" value="${escapeAttr(p.storage_location ?? '')}" placeholder="Bv. externe SSD 2, NAS/Projecten/2026..."></div>
     </div>
 
     <div class="detail-section">
@@ -129,6 +146,9 @@ export function openProjectDetail(id) {
       frame_io_is_folder: document.getElementById('pd-frame-is-folder').checked,
       client_brief: document.getElementById('pd-client-brief').value.trim() || null,
       deliverables: document.getElementById('pd-deliverables').value.trim() || null,
+      client_id: document.getElementById('pd-client-id').value || null,
+      archived: document.getElementById('pd-archived').checked,
+      storage_location: document.getElementById('pd-storage-location').value.trim() || null,
     };
     const statusChanged = payload.status !== p.status;
     try {

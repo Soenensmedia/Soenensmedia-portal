@@ -1,12 +1,15 @@
 import { signIn, signOut, onAuthChange } from './auth.js';
 import { state } from './state.js';
-import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile } from './data.js';
+import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
-import { renderClients } from './clients.js';
+import { renderClients, openClientForm } from './clients.js';
 import { renderFinance } from './finance.js';
 import { renderScripting, openConceptForm } from './scripting.js';
+import { renderDeadlines } from './deadlines.js';
+import { renderContent } from './content.js';
+import { renderEquipment, openEquipmentForm } from './equipment.js';
 import { renderClientView } from './clientView.js';
 import { showToast } from './toast.js';
 
@@ -38,6 +41,8 @@ document.getElementById('client-logout-btn').addEventListener('click', async () 
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
 document.getElementById('new-time-entry-btn').addEventListener('click', openNewTimeEntryModal);
 document.getElementById('scripting-add-btn').addEventListener('click', () => openConceptForm(state.activeScriptingProjectId));
+document.getElementById('new-client-btn').addEventListener('click', () => openClientForm());
+document.getElementById('new-equipment-btn').addEventListener('click', () => openEquipmentForm());
 document.getElementById('prev-week-btn').addEventListener('click', () => shiftWeek(-1));
 document.getElementById('next-week-btn').addEventListener('click', () => shiftWeek(1));
 document.getElementById('today-btn').addEventListener('click', resetWeek);
@@ -57,6 +62,9 @@ function switchView(view) {
   if (view === 'clients') renderClients();
   if (view === 'finance') renderFinance();
   if (view === 'scripting') renderScripting();
+  if (view === 'deadlines') renderDeadlines();
+  if (view === 'content') renderContent();
+  if (view === 'equipment') renderEquipment();
 }
 
 function showLoginView() {
@@ -70,14 +78,16 @@ async function showAppShell() {
   loginView.classList.add('hidden');
   appShell.classList.remove('hidden');
   try {
-    const [projects, events, timeEntries] = await Promise.all([
+    const [projects, events, timeEntries, clients] = await Promise.all([
       fetchProjects(),
       fetchEvents(),
       fetchTimeEntries(),
+      fetchClients(),
     ]);
     state.projects = projects;
     state.events = events;
     state.timeEntries = timeEntries;
+    state.clients = clients;
   } catch (err) {
     showToast('Kon data niet laden: ' + err.message, true);
   }

@@ -197,3 +197,48 @@ export const deleteFinFactuurFile = async (path) => {
   const { error } = await sb.storage.from(FIN_FACTUREN_BUCKET).remove([path]);
   if (error) throw error;
 };
+
+// ── klanten (business-record, los van portaal-accounts) ──
+export const fetchClients = () =>
+  sb.from('clients').select('*').order('naam').then(unwrap);
+export const createClient = (payload) =>
+  sb.from('clients').insert(payload).select().single().then(unwrap);
+export const updateClient = (id, payload) =>
+  sb.from('clients').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteClient = (id) =>
+  sb.from('clients').delete().eq('id', id).then(unwrap);
+
+// ── offertes ──────────────────────────────────────────
+export const fetchFinOffertes = () =>
+  sb.from('fin_offertes').select('*').order('datum', { ascending: false }).then(unwrap);
+export const createFinOfferte = (payload) =>
+  sb.from('fin_offertes').insert(payload).select().single().then(unwrap);
+export const updateFinOfferte = (id, payload) =>
+  sb.from('fin_offertes').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteFinOfferte = (id) =>
+  sb.from('fin_offertes').delete().eq('id', id).then(unwrap);
+
+// ── equipment ─────────────────────────────────────────
+export const fetchEquipment = () =>
+  sb.from('equipment').select('*').order('naam').then(unwrap);
+export const createEquipment = (payload) =>
+  sb.from('equipment').insert(payload).select().single().then(unwrap);
+export const updateEquipment = (id, payload) =>
+  sb.from('equipment').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteEquipment = (id) =>
+  sb.from('equipment').delete().eq('id', id).then(unwrap);
+
+// ── content planning ──────────────────────────────────
+export const fetchContentPosts = () =>
+  sb.from('content_posts').select('*').order('gepland_op', { ascending: true, nullsFirst: false }).then(unwrap);
+export const createContentPost = (payload) =>
+  sb.from('content_posts').insert(payload).select().single().then(unwrap);
+export const updateContentPost = (id, payload) =>
+  sb.from('content_posts').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteContentPost = (id) =>
+  sb.from('content_posts').delete().eq('id', id).then(unwrap);
+
+export const fetchContentGoals = () =>
+  sb.from('content_goals').select('*').then(unwrap);
+export const saveContentGoal = (platform, doelPerWeek) =>
+  sb.from('content_goals').upsert({ platform, doel_per_week: doelPerWeek }, { onConflict: 'platform' }).select().single().then(unwrap);

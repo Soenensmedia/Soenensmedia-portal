@@ -217,3 +217,54 @@ Voer [`sql/007_project_concepts.sql`](sql/007_project_concepts.sql) uit in de SQ
 1. Ga naar **Scripting** → kies de opdracht bovenaan → **"+ Idee/script toevoegen"** → titel, type (Idee/Script) en de inhoud invullen.
 2. De klant ziet dit bij zijn project, kan het goedkeuren of feedback typen specifiek op dat idee/script.
 3. De status wordt automatisch **"Goedgekeurd"** zodra de klant op Goedkeuren klikt — jij ziet dit meteen terug op de Scripting-pagina.
+
+## Fase 8 — Deadlines, Klanten/Retainers, Financiën-uitbreiding, Equipment, Content Planning (nieuw)
+
+Grote uitbreiding op basis van je lijst met gewenste tabs. In plaats van elk punt letterlijk als aparte tab te bouwen (dan wordt de balk bovenaan onwerkbaar), is dit slim gegroepeerd op wat er al bestond:
+
+- **Projecten-status** bestond al als je Dashboard-kanban — niet opnieuw gebouwd.
+- **Offertes & Facturen, KPI's/Doelen, BTW-reminder** zitten nu ín de bestaande **Financiën**-tab (nieuwe sub-tabs/kaarten).
+- **Retainers & Referrals** zitten nu in een volledig herbouwde **Klanten**-tab.
+- **Footage/Back-up** zijn 2 nieuwe velden in het bestaande opdracht-detailvenster.
+- Drie volledig nieuwe tabbladen: **Deadlines**, **Equipment**, **Content**.
+
+### Eenmalig instellen — 6 nieuwe SQL-bestanden, één voor één uitvoeren
+
+Voer deze na elkaar uit in de Supabase SQL Editor (zelfde manier als altijd — plakken, Run):
+1. [`sql/008_clients.sql`](sql/008_clients.sql) — klantenlijst (los van portaal-accounts) + retainer/referral-velden.
+2. [`sql/009_offertes.sql`](sql/009_offertes.sql) — offertes + koppeling facturen aan een opdracht.
+3. [`sql/010_equipment.sql`](sql/010_equipment.sql) — apparatuurbeheer.
+4. [`sql/011_content_planning.sql`](sql/011_content_planning.sql) — content planning + postfrequentie-doelen.
+5. [`sql/012_projects_footage_deadline.sql`](sql/012_projects_footage_deadline.sql) — archief/opslaglocatie-velden op opdrachten.
+6. [`sql/013_fin_kpi_target.sql`](sql/013_fin_kpi_target.sql) — omzetdoel per maand voor de nieuwe KPI-kaart.
+
+Tot je deze hebt uitgevoerd, tonen de nieuwe tabs (Klanten, Equipment, Content, Offertes-sub-tab) gewoon een nette foutmelding i.p.v. te crashen — de rest van het portaal blijft intussen gewoon werken.
+
+### Deadlines (nieuwe tab)
+
+Alle nog niet afgeronde opdrachten met een deadline, gesorteerd van dringend naar later — rood = verlopen, geel = binnen 3 dagen. Opdrachten zonder deadline staan apart onderaan. Klikken opent het gewone opdrachtvenster.
+
+### Klanten (herbouwd)
+
+Dit is nu een echte klantenlijst, los van portaal-accounts (niet elke klant heeft of moet een account hebben). Per klant: naam, contactgegevens, **via wie kwam deze klant binnen** (referral), en optioneel **retainer-gegevens** (vaste maandklant: startdatum, verlengdatum, video's/jaar-doel vs. geleverd). Een opdracht koppel je aan een klant via het nieuwe "Klant (uit klantenlijst)"-veld onderaan het opdracht-detailvenster — dat is een ander veld dan de bestaande "Klant koppelen (e-mail)" voor het portaal-account, en ander dan het vrije tekstveld "Klant" bovenaan.
+
+### Financiën-uitbreiding
+
+- Nieuwe sub-tab **"Offertes"**: status verstuurd/geaccepteerd/geweigerd, optioneel gekoppeld aan een opdracht.
+- Facturen-tabel toont nu een **"Laat"**-label bij openstaande facturen na de vervaldatum.
+- Dashboard-sub-tab heeft 3 nieuwe KPI-kaarten: omzet deze maand vs. je doel (in te stellen bij Instellingen), gemiddelde projectwaarde, en je effectief uurtarief (omzet ÷ gelogde uren uit de Uren-tab).
+- BTW-sub-tab toont bovenaan altijd een reminder-balk: hoeveel dagen tot de BTW-aangifte voor de huidige periode ten laatste moet ingediend zijn (20e van de maand na het kwartaal/de maand).
+
+### Equipment (nieuwe tab)
+
+Simpele tabel: naam, categorie, aankoopdatum/-prijs, onderhoud-datum, verzekerd (ja/nee), uitgeleend aan (leeg = in huis).
+
+### Content (nieuwe tab)
+
+Planning voor je eigen SoenensMedia-content (BTS, reels, testimonials, tips, aftermovie-fragmenten, showreel-fragmenten, persoonlijke verhalen), los van klantwerk: platform, type, status (idee→opname→montage→gepland→gepost), geplande/gepost-datum, caption, optioneel gekoppeld aan een klantproject (voor footage-hergebruik). Bovenaan: **"Doelen instellen"** voor een postfrequentie-doel per platform (x per week), met een teller hoeveel je deze maand al gepost hebt t.o.v. dat doel.
+
+### Wat Leyton zelf moet doen
+1. De 6 SQL-bestanden hierboven uitvoeren.
+2. Klanten aanmaken in de nieuwe Klanten-tab en bestaande opdrachten er evt. aan koppelen (niet automatisch gebeurd — de oude vrije klantnaam-tekst kon niet betrouwbaar automatisch gekoppeld worden).
+3. Content-postfrequentie-doelen instellen.
+4. Omzetdoel per maand instellen bij Financiën → Instellingen (anders toont die KPI-kaart gewoon "geen doel ingesteld").

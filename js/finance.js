@@ -1,3 +1,4 @@
+import { state } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
 import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -6,15 +7,17 @@ import {
   fetchFinKosten, createFinKost, updateFinKost, deleteFinKost,
   fetchFinProjecten, createFinProject, updateFinProject, deleteFinProject,
   fetchFinAankopen, createFinAankoop, updateFinAankoop, deleteFinAankoop,
+  fetchFinOffertes, createFinOfferte, updateFinOfferte, deleteFinOfferte,
   fetchFinSettings, saveFinSettings,
   fetchBtwSetAside, saveBtwSetAside,
   uploadFinFactuurFile, getFinFactuurUrl, deleteFinFactuurFile,
 } from './data.js';
 
-const FIN_TABS = ['dashboard', 'btw', 'facturen', 'kosten', 'projecten', 'aankopen', 'instellingen'];
-const FIN_TAB_LABELS = { dashboard: 'Dashboard', btw: 'BTW', facturen: 'Facturen', kosten: 'Kosten', projecten: 'Projecten', aankopen: 'Aankopen', instellingen: 'Instellingen' };
+const FIN_TABS = ['dashboard', 'btw', 'offertes', 'facturen', 'kosten', 'projecten', 'aankopen', 'instellingen'];
+const FIN_TAB_LABELS = { dashboard: 'Dashboard', btw: 'BTW', offertes: 'Offertes', facturen: 'Facturen', kosten: 'Kosten', projecten: 'Projecten', aankopen: 'Aankopen', instellingen: 'Instellingen' };
 
 const FACTUUR_STATUS_LABELS = { open: 'Open', betaald: 'Betaald' };
+const OFFERTE_STATUS_LABELS = { verstuurd: 'Verstuurd', geaccepteerd: 'Geaccepteerd', geweigerd: 'Geweigerd' };
 const KOST_FREQ_LABELS = { maandelijks: 'Maandelijks', kwartaal: 'Per kwartaal', jaarlijks: 'Jaarlijks' };
 const FIN_PROJECT_STATUS_LABELS = { idee: 'Idee', 'te-factureren': 'Te factureren', gefactureerd: 'Gefactureerd', betaald: 'Betaald' };
 const AANKOOP_PRIORITEIT_LABELS = { laag: 'Laag', gemiddeld: 'Gemiddeld', hoog: 'Hoog' };
@@ -26,7 +29,8 @@ const FIN = {
   kosten: [],
   projecten: [],
   aankopen: [],
-  settings: { default_btw: 21, period: 'kwartaal', banksaldo: 0, reserve_doel_maanden: 3 },
+  offertes: [],
+  settings: { default_btw: 21, period: 'kwartaal', banksaldo: 0, reserve_doel_maanden: 3, omzet_doel_maand: 0 },
   btwCursor: new Date(),
 };
 
@@ -47,6 +51,13 @@ export async function renderFinance() {
     FIN.projecten = projecten;
     FIN.aankopen = aankopen;
     if (settings) FIN.settings = settings;
+    // Offertes is de nieuwste tabel (Fase 8) — apart opvangen zodat een nog niet
+    // uitgevoerde migratie niet de rest van het financieel dashboard blokkeert.
+    try {
+      FIN.offertes = await fetchFinOffertes();
+    } catch {
+      FIN.offertes = [];
+    }
   } catch (err) {
     container.innerHTML = `<div class="empty-note">Kon financiële data niet laden: ${escapeHtml(err.message)}</div>`;
     return;
@@ -75,6 +86,7 @@ function renderFinSubview() {
   const el = document.getElementById('fin-subview');
   if (FIN.activeTab === 'dashboard') return renderFinDashboard(el);
   if (FIN.activeTab === 'btw') return renderFinBtw(el);
+  if (FIN.activeTab === 'offertes') return renderFinOffertesTab(el);
   if (FIN.activeTab === 'facturen') return renderFinFacturenTab(el);
   if (FIN.activeTab === 'kosten') return renderFinKostenTab(el);
   if (FIN.activeTab === 'projecten') return renderFinProjectenTab(el);
@@ -111,6 +123,10 @@ function periodLabel(date, period) {
 function inRange(dateISO, start, end) {
   const d = new Date(dateISO);
   return d >= start && d <= end;
+}
+function btwDeadlineFor(periodEnd) {
+  // Belgische btw-aangifte: uiterlijk de 20e van de maand na het einde van de periode.
+  return new Date(periodEnd.getFullYear(), periodEnd.getMonth() + 1, 20);
 }
 function currentBtwSaldo() {
   const period = FIN.settings.period;
@@ -154,6 +170,20 @@ function renderFinDashboard(el) {
   const vasteKostenMnd = computeVasteKostenMnd();
   const reserveMaanden = vasteKostenMnd > 0 ? Number(FIN.settings.banksaldo) / vasteKostenMnd : 0;
 
+  const facturenDitMaand = FIN.facturen.filter((f) => {
+    const d = new Date(f.datum);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  });
+  const omzetMaand = facturenDitMaand.reduce((s, f) => s + Number(f.bedrag), 0);
+  const doelMaand = Number(FIN.settings.omzet_doel_maand) || 0;
+
+  const gemProjectwaarde = facturenDitJaar.length ? omzetJaar / facturenDitJaar.length : 0;
+
+  const urenDitJaar = state.timeEntries
+    .filter((t) => new Date(t.entry_date).getFullYear() === thisYear)
+    .reduce((s, t) => s + Number(t.hours), 0);
+  const uurtarief = urenDitJaar > 0 ? omzetJaar / urenDitJaar : 0;
+
   const kpis = [
     { label: 'Openstaande facturen', value: eur0(openstaandeBedrag), sub: `${openstaande.length} open` },
     { label: 'Omzet dit jaar', value: eur0(omzetJaar), sub: 'excl. btw' },
@@ -161,6 +191,9 @@ function renderFinDashboard(el) {
     { label: 'Winstmarge', value: winstmarge + '%', sub: 'omzet − kosten, dit jaar' },
     { label: 'Reserve', value: vasteKostenMnd > 0 ? reserveMaanden.toFixed(1) + ' mnd' : '—', sub: 'op basis van banksaldo' },
     { label: 'Vaste kosten / mnd', value: eur0(vasteKostenMnd), sub: '' },
+    { label: 'Omzet deze maand vs. doel', value: eur0(omzetMaand), sub: doelMaand > 0 ? `doel: ${eur0(doelMaand)} (${Math.round((omzetMaand / doelMaand) * 100)}%)` : 'geen doel ingesteld — zie Instellingen' },
+    { label: 'Gem. projectwaarde', value: eur0(gemProjectwaarde), sub: 'per factuur, dit jaar' },
+    { label: 'Effectief uurtarief', value: urenDitJaar > 0 ? eur(uurtarief) + '/u' : '—', sub: urenDitJaar > 0 ? `${urenDitJaar}u gelogd dit jaar` : 'nog geen uren gelogd' },
   ];
 
   el.innerHTML = `
@@ -187,7 +220,16 @@ function renderFinBtw(el) {
   const aftrekbaar = kostenInPeriod.reduce((s, k) => s + Number(k.bedrag) * (Number(k.btw) / 100), 0);
   const saldo = verschuldigd - aftrekbaar;
 
+  const nowBounds = periodBounds(new Date(), period);
+  const deadline = btwDeadlineFor(nowBounds.end);
+  const daysLeft = Math.ceil((deadline - new Date(new Date().toDateString())) / 86400000);
+  const reminderCls = daysLeft <= 7 ? 'btw-owe' : daysLeft <= 21 ? '' : 'btw-refund';
+
   el.innerHTML = `
+    <div class="fin-vrije-ruimte-banner ${reminderCls === 'btw-owe' ? 'fin-reminder-urgent' : ''}">
+      <strong>BTW-aangifte ${escapeHtml(periodLabel(new Date(), period))}</strong> moet ingediend zijn vóór ${fmtDateShortNL(deadline.toISOString().slice(0, 10))}
+      — ${daysLeft >= 0 ? `nog ${daysLeft} dag${daysLeft === 1 ? '' : 'en'}` : `${Math.abs(daysLeft)} dag${Math.abs(daysLeft) === 1 ? '' : 'en'} te laat`}.
+    </div>
     <div class="week-nav" style="margin-bottom:16px;">
       <button type="button" class="btn btn-ghost btn-small" id="btw-prev">‹</button>
       <span class="week-label">${escapeHtml(periodLabel(FIN.btwCursor, period))}</span>
@@ -237,6 +279,102 @@ function renderFinBtw(el) {
   });
 }
 
+// ── OFFERTES ─────────────────────────────────────────────
+function renderFinOffertesTab(el) {
+  const rows = [...FIN.offertes].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  el.innerHTML = `
+    <div class="view-header"><h2>Offertes</h2><button type="button" class="btn btn-red btn-small" id="fin-add-offerte">+ Offerte toevoegen</button></div>
+    ${rows.length ? `<table class="log-table"><thead><tr><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
+      ${rows.map((o) => {
+        const project = o.project_id ? state.projects.find((p) => p.id === o.project_id) : null;
+        return `<tr>
+          <td>${escapeHtml(o.klant || '—')}</td>
+          <td>${escapeHtml(o.omschrijving || '—')}</td>
+          <td>${fmtDateShortNL(o.datum)}</td>
+          <td>${eur(o.bedrag)}</td>
+          <td>${project ? escapeHtml(project.title) : '<span class="hint-dim">—</span>'}</td>
+          <td><span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${OFFERTE_STATUS_LABELS[o.status]}</span></td>
+          <td><button type="button" class="btn-icon fin-edit-offerte" data-id="${o.id}">✎</button></td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>` : '<div class="empty-note">Nog geen offertes. Klik op "+ Offerte toevoegen".</div>'}
+  `;
+  document.getElementById('fin-add-offerte').addEventListener('click', () => openOfferteModal(null));
+  el.querySelectorAll('.fin-edit-offerte').forEach((btn) => {
+    btn.addEventListener('click', () => openOfferteModal(FIN.offertes.find((x) => x.id === btn.dataset.id)));
+  });
+}
+
+function openOfferteModal(existing) {
+  const o = existing || { klant: '', omschrijving: '', datum: todayISO(), bedrag: 0, status: 'verstuurd', project_id: null };
+  const projectOptions = state.projects
+    .map((p) => `<option value="${p.id}" ${o.project_id === p.id ? 'selected' : ''}>${escapeHtml(p.client_name)} — ${escapeHtml(p.title)}</option>`)
+    .join('');
+  openModal(`
+    <div class="modal-header"><h2>${existing ? 'Offerte bewerken' : 'Offerte toevoegen'}</h2></div>
+    <form id="fin-offerte-form">
+      <div class="field"><label>Klant</label><input type="text" id="fo-klant" value="${escapeAttr(o.klant || '')}"></div>
+      <div class="field"><label>Omschrijving</label><input type="text" id="fo-omschrijving" value="${escapeAttr(o.omschrijving || '')}"></div>
+      <div class="field-row">
+        <div class="field"><label>Datum</label><input type="date" id="fo-datum" value="${o.datum || ''}"></div>
+        <div class="field"><label>Bedrag excl. btw (€)</label><input type="number" step="0.01" id="fo-bedrag" value="${o.bedrag}"></div>
+      </div>
+      <div class="field"><label>Gekoppeld project (optioneel)</label>
+        <select id="fo-project"><option value="">— Geen —</option>${projectOptions}</select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="fo-status">
+          <option value="verstuurd" ${o.status === 'verstuurd' ? 'selected' : ''}>Verstuurd</option>
+          <option value="geaccepteerd" ${o.status === 'geaccepteerd' ? 'selected' : ''}>Geaccepteerd</option>
+          <option value="geweigerd" ${o.status === 'geweigerd' ? 'selected' : ''}>Geweigerd</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        ${existing ? '<button type="button" class="btn btn-danger" id="fo-delete">Verwijderen</button>' : '<span></span>'}
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="fo-cancel">Annuleren</button>
+          <button type="submit" class="btn btn-red">Opslaan</button>
+        </div>
+      </div>
+    </form>
+  `);
+  document.getElementById('fo-cancel').addEventListener('click', closeModal);
+  if (existing) {
+    document.getElementById('fo-delete').addEventListener('click', async () => {
+      if (!confirm('Deze offerte verwijderen?')) return;
+      try {
+        await deleteFinOfferte(existing.id);
+        FIN.offertes = FIN.offertes.filter((x) => x.id !== existing.id);
+        closeModal();
+        renderFinSubview();
+        showToast('Offerte verwijderd');
+      } catch (err) { showToast(err.message, true); }
+    });
+  }
+  document.getElementById('fin-offerte-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      klant: document.getElementById('fo-klant').value.trim(),
+      omschrijving: document.getElementById('fo-omschrijving').value.trim(),
+      datum: document.getElementById('fo-datum').value || todayISO(),
+      bedrag: parseFloat(document.getElementById('fo-bedrag').value) || 0,
+      project_id: document.getElementById('fo-project').value || null,
+      status: document.getElementById('fo-status').value,
+    };
+    try {
+      if (existing) {
+        const updated = await updateFinOfferte(existing.id, payload);
+        FIN.offertes[FIN.offertes.findIndex((x) => x.id === existing.id)] = updated;
+      } else {
+        FIN.offertes.unshift(await createFinOfferte(payload));
+      }
+      closeModal();
+      renderFinSubview();
+      showToast('Offerte opgeslagen');
+    } catch (err) { showToast(err.message, true); }
+  });
+}
+
 // ── FACTUREN ─────────────────────────────────────────────
 function renderFinFacturenTab(el) {
   const rows = [...FIN.facturen].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
@@ -245,6 +383,7 @@ function renderFinFacturenTab(el) {
     ${rows.length ? `<table class="log-table"><thead><tr><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Vervaldatum</th><th>Bedrag excl.</th><th>Incl. btw</th><th>Status</th><th></th></tr></thead><tbody>
       ${rows.map((f) => {
         const incl = Number(f.bedrag) * (1 + Number(f.btw) / 100);
+        const laat = f.status === 'open' && f.vervaldatum && new Date(f.vervaldatum) < new Date(new Date().toDateString());
         return `<tr>
           <td>${escapeHtml(f.klant || '—')}</td>
           <td>${escapeHtml(f.omschrijving || '—')}</td>
@@ -252,7 +391,7 @@ function renderFinFacturenTab(el) {
           <td>${fmtDateShortNL(f.vervaldatum)}</td>
           <td>${eur(f.bedrag)}</td>
           <td>${eur(incl)}</td>
-          <td><span class="badge-status ${f.status}">${FACTUUR_STATUS_LABELS[f.status]}</span></td>
+          <td><span class="badge-status ${f.status}">${FACTUUR_STATUS_LABELS[f.status]}</span>${laat ? ' <span class="badge-status aanpassing_gevraagd">Laat</span>' : ''}</td>
           <td><button type="button" class="btn-icon fin-edit-factuur" data-id="${f.id}">✎</button></td>
         </tr>`;
       }).join('')}
@@ -701,6 +840,7 @@ function renderFinInstellingenTab(el) {
       </div>
       <div class="field"><label>Banksaldo (€)</label><input type="number" step="0.01" id="fs-banksaldo" value="${s.banksaldo}"></div>
       <div class="field"><label>Reserve-doel (maanden vaste kosten)</label><input type="number" step="0.5" id="fs-reservedoel" value="${s.reserve_doel_maanden}"></div>
+      <div class="field"><label>Omzetdoel per maand (€)</label><input type="number" step="1" id="fs-omzetdoel" value="${s.omzet_doel_maand ?? 0}"></div>
       <button type="button" class="btn btn-red btn-small" id="fs-save">Opslaan</button>
     </div>
     <div class="detail-section">
@@ -719,6 +859,7 @@ function renderFinInstellingenTab(el) {
       period: document.getElementById('fs-period').value,
       banksaldo: parseFloat(document.getElementById('fs-banksaldo').value) || 0,
       reserve_doel_maanden: parseFloat(document.getElementById('fs-reservedoel').value) || 0,
+      omzet_doel_maand: parseFloat(document.getElementById('fs-omzetdoel').value) || 0,
     };
     try {
       FIN.settings = await saveFinSettings(payload);

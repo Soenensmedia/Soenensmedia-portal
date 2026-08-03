@@ -14,13 +14,19 @@ export function renderScripting() {
     return;
   }
 
-  if (!state.projects.some((p) => p.id === state.activeScriptingProjectId)) {
-    state.activeScriptingProjectId = state.projects[0].id;
-  }
+  try {
+    if (!state.projects.some((p) => p.id === state.activeScriptingProjectId)) {
+      state.activeScriptingProjectId = state.projects[0].id;
+    }
 
-  select.innerHTML = state.projects
-    .map((p) => `<option value="${p.id}" ${p.id === state.activeScriptingProjectId ? 'selected' : ''}>${escapeHtml(p.title)} — ${escapeHtml(p.client_name)}</option>`)
-    .join('');
+    select.innerHTML = state.projects
+      .map((p) => `<option value="${p.id}" ${p.id === state.activeScriptingProjectId ? 'selected' : ''}>${escapeHtml(p.title)} — ${escapeHtml(p.client_name)}</option>`)
+      .join('');
+  } catch (err) {
+    container.innerHTML = `<div class="empty-note">Kon opdrachtenlijst niet opbouwen: ${escapeHtml(err.message)}</div>`;
+    showToast('Scripting: ' + err.message, true);
+    return;
+  }
 
   select.onchange = () => {
     state.activeScriptingProjectId = select.value;
@@ -84,7 +90,10 @@ function scriptingCardHtml(c) {
 }
 
 export function openConceptForm(projectId, concept = null) {
-  if (!projectId) return;
+  if (!projectId) {
+    showToast('Kies eerst een opdracht hierboven.', true);
+    return;
+  }
   openModal(`
     <div class="modal-header"><h2>${concept ? 'Idee/script bewerken' : 'Idee/script toevoegen'}</h2></div>
     <form id="concept-form">

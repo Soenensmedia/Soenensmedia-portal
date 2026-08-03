@@ -77,18 +77,33 @@ label { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; display:
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+#login-view::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(224,53,53,.10), transparent 60%);
+  pointer-events: none;
 }
 .login-box {
+  position: relative;
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 36px 32px;
+  padding: 44px 36px;
 }
-.login-brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 28px; }
-.login-brand img { height: 40px; margin-bottom: 14px; }
-.login-brand .brand-sub { font-size: 9px; letter-spacing: .28em; color: var(--red); text-transform: uppercase; }
+.login-brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+.login-brand-row { display: flex; align-items: center; gap: 14px; }
+.login-brand img { height: 56px; }
+.login-brand .brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; letter-spacing: .08em; color: #fff; }
+.login-brand .brand-sub { font-size: 10px; letter-spacing: .3em; color: var(--red); text-transform: uppercase; margin-top: 10px; }
 .login-error { color: #e07070; font-size: 12px; margin-top: 10px; min-height: 14px; }
 
 /* ══════════ APP SHELL ══════════ */

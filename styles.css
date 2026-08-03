@@ -23,6 +23,11 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-attachment: fixed;
 }
 
 .hidden { display: none !important; }
@@ -79,10 +84,6 @@ label { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; display:
   padding: 20px;
   position: relative;
   overflow: hidden;
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 56px 56px;
 }
 #login-view::before {
   content: '';
@@ -116,8 +117,8 @@ label { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; display:
   padding: 12px 24px;
 }
 .topbar-left { display: flex; align-items: center; gap: 12px; }
-.topbar-left img { height: 22px; }
-.topbar-left .brand-name { font-size: 1rem; color: #fff; }
+.topbar-left img { height: 32px; }
+.topbar-left .brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: .06em; color: #fff; }
 
 .tabs { display: flex; gap: 4px; }
 .tab-btn {

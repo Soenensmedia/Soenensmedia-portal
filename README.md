@@ -42,9 +42,7 @@ python3 -m http.server 8420
 
 Open in je browser: [http://localhost:8420](http://localhost:8420)
 
-Klik op **"Account aanmaken"**, maak je eigen login (jouw e-mail + een wachtwoord), en log in. Dit is de enige keer dat je dit doet — dit wordt je persoonlijke toegang tot het portaal.
-
-> Tip: als Supabase e-mailbevestiging vereist, krijg je een mail — klik de bevestigingslink en log daarna in.
+Log in met het account dat je via Supabase → **Authentication → Users → Add user** hebt aangemaakt (zie "Beveiliging: enkel jij kan accounts aanmaken" verderop).
 
 Test even: een opdracht toevoegen, een agenda-item plannen, uren loggen. Klopt alles? Dan ben je klaar om te deployen.
 
@@ -61,9 +59,9 @@ Telkens Claude iets aanpast aan het portaal: sleep de map gewoon opnieuw naar [a
 
 ## Fase 2 — Klantenportaal (nieuw)
 
-Klanten kunnen nu ook zelf een account aanmaken en inloggen. Ze zien dan enkel hún project, met de Frame.io-review, een feedback-veld en een "Goedkeuren"-knop. Jij (admin) blijft alles zien via het bestaande dashboard.
+Klanten kunnen inloggen en zien dan enkel hún project, met de Frame.io-review, een feedback-veld en een "Goedkeuren"-knop. Jij (admin) blijft alles zien via het bestaande dashboard.
 
-**Belangrijk:** laat "Account aanmaken" dus gewoon **aan staan** in Supabase (het eerdere advies om dit uit te zetten vervalt) — nieuwe accounts krijgen automatisch de rol "client" en zien niets totdat jij ze koppelt aan een project.
+**Update:** publieke account-aanmaak staat intussen **uit** (zie "Beveiliging" hieronder) — jij maakt voortaan zelf elk account aan via Supabase, klanten kunnen niet meer zelf "Account aanmaken" klikken. Nieuwe accounts krijgen nog steeds automatisch de rol "client" en zien niets totdat jij ze koppelt aan een project.
 
 ### Eenmalig instellen
 
@@ -77,10 +75,10 @@ Klanten kunnen nu ook zelf een account aanmaken en inloggen. Ze zien dan enkel h
 
 ### Een klant koppelen aan een project
 
-1. Laat de klant zelf een account aanmaken via de "Account aanmaken"-link op de inlogpagina (met hun eigen e-mail).
+1. Maak eerst zelf een account voor de klant aan: Supabase → **Authentication → Users → Add user** (e-mail + een wachtwoord, geef dat wachtwoord door aan de klant, bv. via e-mail).
 2. Open in jouw dashboard de betreffende opdracht → onder **Klantenportaal** vul je hun e-mailadres in bij "Klant koppelen" en klik **Koppelen**.
 3. Plak ook de Frame.io-share-link bij **Frame.io link** en klik **Opslaan**.
-4. De klant ziet vanaf nu dat project bij het inloggen, met de video-review, kan feedback typen, en kan goedkeuren.
+4. De klant logt in met het e-mail/wachtwoord dat jij hebt aangemaakt, en ziet vanaf nu dat project, met de video-review, kan feedback typen, en kan goedkeuren.
 
 > Let op: links naar een **map met meerdere bestanden** kunnen niet embedden (Frame.io staat dat niet toe voor hun volledige app-omgeving, enkel voor losse review-links). Vink in dat geval **"Dit is een map met meerdere items"** aan bij het project — dan toont het portaal enkel de "Open in Frame.io"-knop i.p.v. een lege embed-box.
 
@@ -123,3 +121,22 @@ Open een opdracht → onder **Klantenportaal** vind je nu ook:
 
 - Bij het klikken op een foto: kan nu **doorklikken naar volgende/vorige** foto (pijlen of pijltjestoetsen), en per foto **downloaden**.
 - Boven de fotogrid staat een **"Download alles"**-knop die alle foto's van dat project in 1 zip-bestand bundelt.
+
+## Beveiliging: enkel jij kan accounts aanmaken (nieuw)
+
+De "Account aanmaken"-optie is uit de app gehaald — niemand kan zichzelf nog registreren. Jij maakt voortaan zelf elk account aan.
+
+### Eenmalig instellen (verplicht)
+
+1. Supabase Dashboard → **Authentication** → **Sign In / Providers** (of **Providers** → **Email**, afhankelijk van de Supabase-versie).
+2. Zet **"Allow new users to sign up"** (of **"Enable Sign Up"**) **uit**.
+3. Bewaar de instelling.
+
+Vanaf nu faalt elke poging tot zelf-registratie — accounts bestaan enkel nog als jij ze aanmaakt.
+
+### Een nieuw account aanmaken (voor jezelf, of voor een klant)
+
+1. Supabase → **Authentication → Users → Add user**.
+2. Vul een e-mail en wachtwoord in → **Create user**.
+3. Geef die inloggegevens door aan de betrokken persoon (klant), of gebruik ze zelf om in te loggen.
+4. Nieuwe accounts krijgen automatisch de rol "client" (zien niets tot je ze aan een project koppelt) — voor jezelf moet je dus nog steeds de `update profiles set role = 'admin' where email = '...'`-regel uit Fase 2 uitvoeren.

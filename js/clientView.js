@@ -1,6 +1,6 @@
-import { state, STATUS_LABELS, fmtDate } from './state.js';
+import { state, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept } from './data.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -32,6 +32,11 @@ export async function renderClientView() {
       state.clientPhotosByProject[p.id] = await listPhotos(p.id);
     } catch {
       state.clientPhotosByProject[p.id] = [];
+    }
+    try {
+      state.clientConceptsByProject[p.id] = await fetchProjectConcepts(p.id);
+    } catch {
+      state.clientConceptsByProject[p.id] = [];
     }
   }));
 
@@ -86,15 +91,16 @@ function renderClientProjectDetail(projectId) {
   }
   const feedback = state.clientFeedbackByProject[p.id] || [];
   const photos = state.clientPhotosByProject[p.id] || [];
+  const concepts = state.clientConceptsByProject[p.id] || [];
 
   const container = document.getElementById('client-projects-container');
   container.innerHTML = `
     <button type="button" class="btn btn-ghost btn-small client-back-btn" id="client-back-btn">‹ Terug naar projecten</button>
-    ${projectDetailHtml(p, feedback, photos)}
+    ${projectDetailHtml(p, feedback, photos, concepts)}
   `;
 
   document.getElementById('client-back-btn').addEventListener('click', renderClientList);
-  wireProjectDetailEvents(p, photos);
+  wireProjectDetailEvents(p, photos, feedback, concepts);
   applyMosaicLayout(container);
 }
 
@@ -116,7 +122,29 @@ function applyMosaicLayout(container) {
   });
 }
 
-function projectDetailHtml(p, feedback, photos) {
+function conceptCardHtml(c, conceptFeedback) {
+  return `
+    <div class="concept-card" data-id="${c.id}">
+      <div class="concept-card-header">
+        <span class="badge-status ${c.type}">${CONCEPT_TYPE_LABELS[c.type] ?? c.type}</span>
+        <span class="badge-status ${c.status}">${CONCEPT_STATUS_LABELS[c.status] ?? c.status}</span>
+      </div>
+      <div class="concept-card-title">${escapeHtml(c.title)}</div>
+      ${c.content ? `<p class="concept-card-content">${escapeHtml(c.content)}</p>` : ''}
+      ${c.status !== 'goedgekeurd' ? `<button type="button" class="btn btn-red btn-small concept-approve-btn" data-id="${c.id}">Goedkeuren</button>` : ''}
+      <div class="concept-feedback">
+        ${conceptFeedback.length
+          ? conceptFeedback.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
+          : '<div class="empty-note">Nog geen feedback op dit item.</div>'}
+        <form id="concept-fb-form-${c.id}" class="feedback-form">
+          <input type="text" id="concept-fb-input-${c.id}" placeholder="Feedback op dit idee/script...">
+          <button type="submit" class="btn btn-ghost btn-small">Versturen</button>
+        </form>
+      </div>
+    </div>`;
+}
+
+function projectDetailHtml(p, feedback, photos, concepts) {
   return `
     <div class="client-project-card">
       <div class="client-project-header">
@@ -133,6 +161,14 @@ function projectDetailHtml(p, feedback, photos) {
         <div class="detail-section">
           ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : ''}
           ${p.deliverables ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>` : ''}
+        </div>` : ''}
+
+      ${concepts.length ? `
+        <div class="detail-section">
+          <h3>Ideeën & Scripts</h3>
+          <div class="concept-list">
+            ${concepts.map((c) => conceptCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}
+          </div>
         </div>` : ''}
 
       ${photos.length ? `
@@ -163,9 +199,12 @@ function projectDetailHtml(p, feedback, photos) {
 
       <div class="detail-section">
         <h3>Feedback</h3>
-        ${feedback.length
-          ? feedback.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
-          : '<div class="empty-note">Nog geen feedback.</div>'}
+        ${(() => {
+          const general = feedback.filter((f) => !f.concept_id);
+          return general.length
+            ? general.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
+            : '<div class="empty-note">Nog geen feedback.</div>';
+        })()}
         <form id="fb-form-${p.id}" class="feedback-form">
           <input type="text" id="fb-input-${p.id}" placeholder="Schrijf feedback...">
           <button type="submit" class="btn btn-red btn-small">Versturen</button>
@@ -174,7 +213,7 @@ function projectDetailHtml(p, feedback, photos) {
     </div>`;
 }
 
-function wireProjectDetailEvents(p, photos) {
+function wireProjectDetailEvents(p, photos, feedback, concepts) {
   const form = document.getElementById(`fb-form-${p.id}`);
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -209,6 +248,38 @@ function wireProjectDetailEvents(p, photos) {
   });
 
   document.getElementById('download-all-btn')?.addEventListener('click', () => downloadAllPhotos(p, photos));
+
+  concepts.forEach((c) => {
+    const fbForm = document.getElementById(`concept-fb-form-${c.id}`);
+    fbForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById(`concept-fb-input-${c.id}`);
+      const message = input.value.trim();
+      if (!message) return;
+      try {
+        await createFeedback(p.id, message, c.id);
+        state.clientFeedbackByProject[p.id] = await fetchProjectFeedback(p.id);
+        showToast('Feedback verstuurd');
+        renderClientProjectDetail(p.id);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+  });
+
+  document.querySelectorAll('.concept-approve-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Dit idee/script goedkeuren?')) return;
+      try {
+        await approveConcept(btn.dataset.id);
+        state.clientConceptsByProject[p.id] = await fetchProjectConcepts(p.id);
+        showToast('Goedgekeurd');
+        renderClientProjectDetail(p.id);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+  });
 }
 
 // ── lightbox met vorige/volgende navigatie ──────────────

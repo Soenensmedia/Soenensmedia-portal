@@ -11,6 +11,13 @@ export const STATUS_LABELS = {
 
 export const STATUS_ORDER = Object.keys(STATUS_LABELS);
 
+export const CONCEPT_TYPE_LABELS = { idee: 'Idee', script: 'Script' };
+export const CONCEPT_STATUS_LABELS = {
+  in_afwachting: 'In afwachting',
+  goedgekeurd: 'Goedgekeurd',
+  aanpassing_gevraagd: 'Aanpassing gevraagd',
+};
+
 export const EVENT_TYPE_LABELS = {
   shoot: 'Shoot',
   edit: 'Edit',
@@ -34,6 +41,7 @@ export const state = {
   clientProjects: [],
   clientFeedbackByProject: {},
   clientPhotosByProject: {},
+  clientConceptsByProject: {},
 };
 
 export function startOfWeek(date) {

@@ -1,6 +1,6 @@
-import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
+import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, fetchProjectConcepts, createConcept, updateConcept, deleteConcept } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -67,6 +67,12 @@ export function openProjectDetail(id) {
         <button type="button" class="btn btn-ghost btn-small" id="pd-photo-upload">Uploaden</button>
       </div>
       <div class="photo-grid" id="pd-photo-grid"><div class="empty-note">Laden...</div></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Ideeën & Scripts</h3>
+      <div class="concept-list" id="pd-concepts-list"><div class="empty-note">Laden...</div></div>
+      <button type="button" class="btn btn-ghost btn-small" id="pd-concept-add">+ Idee/script toevoegen</button>
     </div>
 
     <div class="detail-section">
@@ -161,6 +167,103 @@ export function openProjectDetail(id) {
       input.value = '';
       showToast(`${files.length} foto('s) geüpload`);
       refreshPhotoGrid(id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  refreshConceptsList(id);
+
+  document.getElementById('pd-concept-add').addEventListener('click', () => {
+    openConceptForm(id);
+  });
+}
+
+async function refreshConceptsList(projectId) {
+  const list = document.getElementById('pd-concepts-list');
+  if (!list) return;
+  try {
+    const concepts = await fetchProjectConcepts(projectId);
+    if (!list.isConnected) return;
+    list.innerHTML = concepts.length
+      ? concepts.map((c) => `
+        <div class="detail-list-item concept-row" data-id="${c.id}">
+          <span>
+            <span class="badge-status ${c.type}">${CONCEPT_TYPE_LABELS[c.type] ?? c.type}</span>
+            <span class="badge-status ${c.status}">${CONCEPT_STATUS_LABELS[c.status] ?? c.status}</span>
+            ${escapeHtml(c.title)}
+          </span>
+          <span class="concept-row-actions">
+            <button type="button" class="btn btn-ghost btn-small concept-edit" data-id="${c.id}">Bewerken</button>
+            <button type="button" class="btn btn-ghost btn-small concept-delete" data-id="${c.id}">Verwijderen</button>
+          </span>
+        </div>`).join('')
+      : '<div class="empty-note">Nog geen ideeën of scripts toegevoegd.</div>';
+
+    list.querySelectorAll('.concept-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const concept = concepts.find((c) => c.id === btn.dataset.id);
+        if (concept) openConceptForm(projectId, concept);
+      });
+    });
+    list.querySelectorAll('.concept-delete').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Dit idee/script verwijderen?')) return;
+        try {
+          await deleteConcept(btn.dataset.id);
+          refreshConceptsList(projectId);
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+    });
+  } catch (err) {
+    if (list.isConnected) {
+      list.innerHTML = `<div class="empty-note">Kon ideeën/scripts niet laden: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+function openConceptForm(projectId, concept = null) {
+  openModal(`
+    <div class="modal-header"><h2>${concept ? 'Idee/script bewerken' : 'Idee/script toevoegen'}</h2></div>
+    <form id="concept-form">
+      <div class="field"><label>Titel</label><input type="text" id="concept-title" value="${escapeAttr(concept?.title ?? '')}" required></div>
+      <div class="field"><label>Type</label>
+        <select id="concept-type">
+          <option value="idee" ${concept?.type === 'idee' || !concept ? 'selected' : ''}>Idee</option>
+          <option value="script" ${concept?.type === 'script' ? 'selected' : ''}>Script</option>
+        </select>
+      </div>
+      <div class="field"><label>Inhoud</label><textarea id="concept-content" rows="8" placeholder="Omschrijving van het idee, of het volledige script...">${escapeHtml(concept?.content ?? '')}</textarea></div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="concept-cancel">Sluiten</button>
+          <button type="submit" class="btn btn-red">Opslaan</button>
+        </div>
+      </div>
+    </form>
+  `);
+
+  document.getElementById('concept-cancel').addEventListener('click', () => openProjectDetail(projectId));
+
+  document.getElementById('concept-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      title: document.getElementById('concept-title').value.trim(),
+      type: document.getElementById('concept-type').value,
+      content: document.getElementById('concept-content').value.trim() || null,
+    };
+    try {
+      if (concept) {
+        await updateConcept(concept.id, payload);
+        showToast('Idee/script bijgewerkt');
+      } else {
+        await createConcept({ ...payload, project_id: projectId });
+        showToast('Idee/script toegevoegd');
+      }
+      openProjectDetail(projectId);
     } catch (err) {
       showToast(err.message, true);
     }

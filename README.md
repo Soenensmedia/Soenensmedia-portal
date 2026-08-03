@@ -195,3 +195,21 @@ Voer [`sql/006_financien.sql`](sql/006_financien.sql) uit in de SQL Editor.
 - **Projecten** in dit Financiën-tabblad zijn iets anders dan de "opdrachten" op je Dashboard-tabblad: dit hier volgt de facturatie (idee → te factureren → gefactureerd → betaald), je Dashboard volgt de productie (nieuw → shooten → ... → afgerond). Bewust apart gehouden.
 - Facturen uploaden bij een financieel project werkt zoals voorheen (bekijken/verwijderen via het tabelletje).
 - Er is ook een **"Exporteer back-up"**-knop (leest nu uit het portaal zelf) voor gewoon gemoedsrust — los van de eenmalige import hierboven.
+
+## Fase 7 — Video-ideeën & scripts met klant-goedkeuring (nieuw)
+
+In het opdracht-detailvenster (Dashboard → kaartje aanklikken) staat nu een sectie **"Ideeën & Scripts"**: je kan er per opdracht ideeën of volledige scripts toevoegen, bewerken en verwijderen. Zodra je er één toevoegt, ziet de gekoppelde klant dat meteen in zijn eigen portaal (bij de briefing/deliverables, vóór de foto's/video), met per idee/script:
+
+- een **type-badge** (Idee/Script) en **status-badge** (In afwachting / Goedgekeurd / Aanpassing gevraagd),
+- een **"Goedkeuren"**-knop (verdwijnt zodra goedgekeurd),
+- een eigen klein **feedback-draadje**, apart van de algemene projectfeedback onderaan — feedback op een specifiek idee/script raakt dus nooit vermengd met de algemene feedback over het hele project.
+
+### Eenmalig instellen
+
+Voer [`sql/007_project_concepts.sql`](sql/007_project_concepts.sql) uit in de SQL Editor.
+
+### Gebruik
+
+1. Open een opdracht → **"Ideeën & Scripts"** → **"+ Idee/script toevoegen"** → titel, type (Idee/Script) en de inhoud invullen.
+2. De klant ziet dit bij zijn project, kan het goedkeuren of feedback typen specifiek op dat idee/script.
+3. De status wordt automatisch **"Goedgekeurd"** zodra de klant op Goedkeuren klikt — jij ziet dit meteen terug in het detailvenster.

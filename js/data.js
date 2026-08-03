@@ -63,8 +63,24 @@ export const approveProject = (projectId) =>
 export const fetchProjectFeedback = (projectId) =>
   sb.from('project_feedback').select('*').eq('project_id', projectId).order('created_at').then(unwrap);
 
-export const createFeedback = (projectId, message) =>
-  sb.from('project_feedback').insert({ project_id: projectId, message }).select().single().then(unwrap);
+export const createFeedback = (projectId, message, conceptId = null) =>
+  sb.from('project_feedback').insert({ project_id: projectId, message, concept_id: conceptId }).select().single().then(unwrap);
+
+// ── video-ideeën & scripts ──────────────────────────────
+export const fetchProjectConcepts = (projectId) =>
+  sb.from('project_concepts').select('*').eq('project_id', projectId).order('created_at').then(unwrap);
+
+export const createConcept = (payload) =>
+  sb.from('project_concepts').insert(payload).select().single().then(unwrap);
+
+export const updateConcept = (id, payload) =>
+  sb.from('project_concepts').update(payload).eq('id', id).select().single().then(unwrap);
+
+export const deleteConcept = (id) =>
+  sb.from('project_concepts').delete().eq('id', id).then(unwrap);
+
+export const approveConcept = (conceptId) =>
+  sb.rpc('approve_concept', { p_concept_id: conceptId }).then(unwrap);
 
 export const fetchClientProfiles = () =>
   sb.from('profiles').select('*').eq('role', 'client').order('created_at', { ascending: false }).then(unwrap);

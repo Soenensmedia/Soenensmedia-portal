@@ -6,6 +6,7 @@ import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
 import { renderClients } from './clients.js';
 import { renderFinance } from './finance.js';
+import { renderScripting, openConceptForm } from './scripting.js';
 import { renderClientView } from './clientView.js';
 import { showToast } from './toast.js';
 
@@ -36,6 +37,7 @@ document.getElementById('client-logout-btn').addEventListener('click', async () 
 
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
 document.getElementById('new-time-entry-btn').addEventListener('click', openNewTimeEntryModal);
+document.getElementById('scripting-add-btn').addEventListener('click', () => openConceptForm(state.activeScriptingProjectId));
 document.getElementById('prev-week-btn').addEventListener('click', () => shiftWeek(-1));
 document.getElementById('next-week-btn').addEventListener('click', () => shiftWeek(1));
 document.getElementById('today-btn').addEventListener('click', resetWeek);
@@ -54,6 +56,7 @@ function switchView(view) {
   if (view === 'uren') renderUren();
   if (view === 'clients') renderClients();
   if (view === 'finance') renderFinance();
+  if (view === 'scripting') renderScripting();
 }
 
 function showLoginView() {

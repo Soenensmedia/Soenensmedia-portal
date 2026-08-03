@@ -38,6 +38,7 @@ export const state = {
   weekStart: startOfWeek(new Date()),
   activeProjectId: null,
   activeClientProjectId: null,
+  activeScriptingProjectId: null,
   clientProjects: [],
   clientFeedbackByProject: {},
   clientPhotosByProject: {},

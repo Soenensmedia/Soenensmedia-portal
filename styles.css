@@ -247,6 +247,9 @@ table.log-table tr:last-child td { border-bottom: none; }
 .feedback-form { display: flex; gap: 8px; margin-top: 10px; }
 .feedback-form input { flex: 1; }
 
+/* ══════════ SCRIPTING ══════════ */
+#scripting-project-field { max-width: 420px; margin-bottom: 24px; }
+
 /* ══════════ IDEEËN & SCRIPTS ══════════ */
 .concept-row { align-items: center; }
 .concept-row .badge-status { margin-right: 8px; }
@@ -262,6 +265,9 @@ table.log-table tr:last-child td { border-bottom: none; }
 .concept-card-content { font-size: 13px; color: var(--text-dim); line-height: 1.5; white-space: pre-line; margin-bottom: 10px; }
 .concept-card .concept-approve-btn { margin-bottom: 10px; }
 .concept-feedback { border-top: 1px solid var(--line); padding-top: 10px; }
+
+#scripting-container .concept-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-items: start; }
+#scripting-container .concept-card-content { max-height: 220px; overflow-y: auto; }
 
 .frame-folder-card {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;

@@ -50,6 +50,7 @@
       <button class="tab-btn" data-view="uren">Uren</button>
       <button class="tab-btn" data-view="clients">Klanten</button>
       <button class="tab-btn" data-view="finance">Financiën</button>
+      <button class="tab-btn" data-view="scripting">Scripting</button>
     </div>
     <button class="btn btn-ghost btn-small" id="logout-btn">Uitloggen</button>
   </div>
@@ -108,6 +109,19 @@
         <h1>Financiën</h1>
       </div>
       <div id="finance-container"></div>
+    </section>
+
+    <!-- SCRIPTING -->
+    <section id="view-scripting" class="view hidden">
+      <div class="view-header">
+        <h1>Scripting</h1>
+        <button class="btn btn-red" id="scripting-add-btn">+ Idee/script toevoegen</button>
+      </div>
+      <div class="field" id="scripting-project-field">
+        <label>Opdracht</label>
+        <select id="scripting-project-select"></select>
+      </div>
+      <div id="scripting-container"></div>
     </section>
   </main>
 </div>

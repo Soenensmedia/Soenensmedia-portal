@@ -198,11 +198,15 @@ Voer [`sql/006_financien.sql`](sql/006_financien.sql) uit in de SQL Editor.
 
 ## Fase 7 — Video-ideeën & scripts met klant-goedkeuring (nieuw)
 
-In het opdracht-detailvenster (Dashboard → kaartje aanklikken) staat nu een sectie **"Ideeën & Scripts"**: je kan er per opdracht ideeën of volledige scripts toevoegen, bewerken en verwijderen. Zodra je er één toevoegt, ziet de gekoppelde klant dat meteen in zijn eigen portaal (bij de briefing/deliverables, vóór de foto's/video), met per idee/script:
+Nieuw tabblad **"Scripting"** naast Dashboard/Agenda/Uren/Klanten/Financiën: een eigen, ruime pagina (geen krap venstertje meer) om per opdracht ideeën of volledige scripts toe te voegen, te bewerken en te verwijderen. Bovenaan kies je via een dropdown voor welke opdracht je aan het werken bent.
+
+Zodra je een idee/script toevoegt, ziet de gekoppelde klant dat meteen in zijn eigen portaal (bij de briefing/deliverables, vóór de foto's/video), met per idee/script:
 
 - een **type-badge** (Idee/Script) en **status-badge** (In afwachting / Goedgekeurd / Aanpassing gevraagd),
 - een **"Goedkeuren"**-knop (verdwijnt zodra goedgekeurd),
 - een eigen klein **feedback-draadje**, apart van de algemene projectfeedback onderaan — feedback op een specifiek idee/script raakt dus nooit vermengd met de algemene feedback over het hele project.
+
+Vanuit het gewone opdracht-detailvenster (Dashboard → kaartje aanklikken) staat ook een knop **"→ Ideeën & Scripts voor dit project"** die je meteen naar de Scripting-tab brengt met die opdracht al geselecteerd.
 
 ### Eenmalig instellen
 
@@ -210,6 +214,6 @@ Voer [`sql/007_project_concepts.sql`](sql/007_project_concepts.sql) uit in de SQ
 
 ### Gebruik
 
-1. Open een opdracht → **"Ideeën & Scripts"** → **"+ Idee/script toevoegen"** → titel, type (Idee/Script) en de inhoud invullen.
+1. Ga naar **Scripting** → kies de opdracht bovenaan → **"+ Idee/script toevoegen"** → titel, type (Idee/Script) en de inhoud invullen.
 2. De klant ziet dit bij zijn project, kan het goedkeuren of feedback typen specifiek op dat idee/script.
-3. De status wordt automatisch **"Goedgekeurd"** zodra de klant op Goedkeuren klikt — jij ziet dit meteen terug in het detailvenster.
+3. De status wordt automatisch **"Goedgekeurd"** zodra de klant op Goedkeuren klikt — jij ziet dit meteen terug op de Scripting-pagina.

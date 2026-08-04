@@ -79,6 +79,7 @@ function renderClientList() {
     <div class="client-welcome">
       <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
+      ${state.portalWelcomeGuide ? `<p class="client-welcome-guide">${escapeHtml(state.portalWelcomeGuide)}</p>` : ''}
     </div>
     <div class="client-project-tiles">
       ${state.clientProjects.map(tileHtml).join('')}

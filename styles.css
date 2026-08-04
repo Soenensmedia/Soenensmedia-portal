@@ -390,6 +390,10 @@ table.log-table tr:last-child td { border-bottom: none; }
 .client-welcome { margin-bottom: 24px; }
 .client-welcome-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #fff; letter-spacing: .03em; }
 .client-welcome-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.client-welcome-guide {
+  margin-top: 16px; font-size: 13.5px; color: var(--text); line-height: 1.6; white-space: pre-line;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+}
 
 .client-project-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .client-project-tile {

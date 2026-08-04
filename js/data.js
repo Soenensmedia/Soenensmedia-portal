@@ -91,6 +91,12 @@ export const notifyStatusChange = (projectId) =>
     return data;
   });
 
+export const sendDocumentEmail = (payload) =>
+  sb.functions.invoke('send-document-email', { body: payload }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
+  });
+
 // ── fotogalerij ─────────────────────────────────────────
 const PHOTOS_BUCKET = 'project-photos';
 const SIGNED_URL_TTL = 4 * 60 * 60; // 4 uur

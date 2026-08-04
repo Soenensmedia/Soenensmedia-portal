@@ -232,6 +232,28 @@ Bij "Script" staat een vinkje **"Scène-structuur gebruiken"** — uitvinken gee
 
 Klanten zien de scène-opbouw ook netjes uitgesplitst (Visueel/Tekst per scène + totale duur) in hun eigen portaal, i.p.v. een blok platte tekst.
 
+## Fase 9 — Offerte/factuur-PDF's genereren en versturen (nieuw)
+
+Het portaal maakt nu zelf de PDF van een offerte of factuur — geen los Word/Excel-sjabloon meer nodig. Bij elke rij in **Financiën → Offertes** en **Financiën → Facturen** staan 2 nieuwe knoppen naast bewerken (✎):
+- **📄 Download PDF** — genereert de PDF meteen en downloadt hem naar je computer.
+- **✉ Verstuur per e-mail** — genereert dezelfde PDF en verstuurt hem als bijlage naar het e-mailadres van de klant (moet je invullen bij het bewerken van die offerte/factuur).
+
+Elke nieuwe offerte/factuur krijgt automatisch een **volgnummer** (bv. `2026-001`, `2026-002`, ...) zodra je hem aanmaakt — verplicht voor een geldige factuur in België, en je hoeft er zelf niets voor te doen.
+
+### Eenmalig instellen
+
+1. Voer [`sql/014_offerte_factuur_documenten.sql`](sql/014_offerte_factuur_documenten.sql) uit in de SQL Editor.
+2. Ga naar **Financiën → Instellingen → "Bedrijfsgegevens (voor offerte/factuur-PDF's)"** en vul in: bedrijfsnaam, adres, ondernemingsnummer, IBAN, betalingstermijn. Dit komt op elke PDF te staan.
+3. **Alleen nodig voor "Verstuur per e-mail"** (downloaden werkt al zonder dit): deploy de nieuwe Edge Function.
+   - Supabase Dashboard → **Edge Functions** → nieuwe functie **`send-document-email`** → plak de volledige inhoud van [`supabase/functions/send-document-email/index.ts`](supabase/functions/send-document-email/index.ts) → **Deploy**.
+   - Geen nieuwe secret nodig — hergebruikt dezelfde `BREVO_API_KEY` die je al had ingesteld bij de statuswijziging-e-mail (Fase 5). Als je die nog niet had, zie de Fase 5-instructies hierboven.
+
+### Gebruik
+
+1. Maak een offerte of factuur aan zoals gewoonlijk, en vul het **e-mailadres van de klant** in als je hem per mail wil kunnen versturen.
+2. Klik op 📄 om de PDF te downloaden, of op ✉ om hem meteen naar de klant te mailen.
+3. Downloaden werkt altijd; versturen per e-mail vraagt stap 3 hierboven (de Edge Function).
+
 ## Fase 8 — Deadlines, Klanten/Retainers, Financiën-uitbreiding, Equipment, Content Planning (nieuw)
 
 Grote uitbreiding op basis van je lijst met gewenste tabs. In plaats van elk punt letterlijk als aparte tab te bouwen (dan wordt de balk bovenaan onwerkbaar), is dit slim gegroepeerd op wat er al bestond:

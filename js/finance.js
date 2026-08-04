@@ -11,7 +11,9 @@ import {
   fetchFinSettings, saveFinSettings,
   fetchBtwSetAside, saveBtwSetAside,
   uploadFinFactuurFile, getFinFactuurUrl, deleteFinFactuurFile,
+  sendDocumentEmail,
 } from './data.js';
+import { generateFactuurPdf, generateOffertePdf, downloadPdf, pdfToBase64 } from './pdf.js';
 
 const FIN_TABS = ['dashboard', 'btw', 'offertes', 'facturen', 'kosten', 'projecten', 'aankopen', 'instellingen'];
 const FIN_TAB_LABELS = { dashboard: 'Dashboard', btw: 'BTW', offertes: 'Offertes', facturen: 'Facturen', kosten: 'Kosten', projecten: 'Projecten', aankopen: 'Aankopen', instellingen: 'Instellingen' };
@@ -30,7 +32,10 @@ const FIN = {
   projecten: [],
   aankopen: [],
   offertes: [],
-  settings: { default_btw: 21, period: 'kwartaal', banksaldo: 0, reserve_doel_maanden: 3, omzet_doel_maand: 0 },
+  settings: {
+    default_btw: 21, period: 'kwartaal', banksaldo: 0, reserve_doel_maanden: 3, omzet_doel_maand: 0,
+    bedrijfsnaam: '', bedrijfsadres: '', ondernemingsnummer: '', iban: '', betalingstermijn_dagen: 30,
+  },
   btwCursor: new Date(),
 };
 
@@ -142,6 +147,52 @@ function computeVrijeRuimte() {
   const vrijeRuimte = Number(FIN.settings.banksaldo) - reserveDoel - btwOpzij;
   return { vasteKostenMnd, reserveDoel, btwOpzij, vrijeRuimte, banksaldo: Number(FIN.settings.banksaldo) };
 }
+function nextDocumentNumber(existingRows, numberField) {
+  const year = new Date().getFullYear();
+  const prefix = `${year}-`;
+  const maxSeq = existingRows
+    .map((r) => r[numberField])
+    .filter((n) => n && n.startsWith(prefix))
+    .map((n) => parseInt(n.slice(prefix.length), 10))
+    .filter((n) => !isNaN(n))
+    .reduce((max, n) => Math.max(max, n), 0);
+  return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
+}
+
+async function handleDownloadPdf(kind, row) {
+  try {
+    const doc = kind === 'factuur' ? generateFactuurPdf(row, FIN.settings) : generateOffertePdf(row, FIN.settings);
+    const nummer = kind === 'factuur' ? row.factuurnummer : row.offertenummer;
+    downloadPdf(doc, `${kind}-${nummer || row.id.slice(0, 8)}.pdf`);
+  } catch (err) {
+    showToast('Kon PDF niet maken: ' + err.message, true);
+  }
+}
+
+async function handleEmailPdf(kind, row) {
+  if (!row.klant_email) {
+    showToast('Geen e-mailadres bij deze klant ingevuld — vul dat eerst in via bewerken (✎).', true);
+    return;
+  }
+  if (!confirm(`Deze ${kind} versturen naar ${row.klant_email}?`)) return;
+  try {
+    const doc = kind === 'factuur' ? generateFactuurPdf(row, FIN.settings) : generateOffertePdf(row, FIN.settings);
+    const nummer = kind === 'factuur' ? row.factuurnummer : row.offertenummer;
+    const pdfBase64 = pdfToBase64(doc);
+    await sendDocumentEmail({
+      to: row.klant_email,
+      subject: `${kind === 'factuur' ? 'Factuur' : 'Offerte'}${nummer ? ' ' + nummer : ''} — ${FIN.settings.bedrijfsnaam || 'SoenensMedia'}`,
+      kind,
+      nummer,
+      pdfBase64,
+      filename: `${kind}-${nummer || row.id.slice(0, 8)}.pdf`,
+    });
+    showToast('Verstuurd naar ' + row.klant_email);
+  } catch (err) {
+    showToast('Kon niet versturen: ' + err.message, true);
+  }
+}
+
 function adviesFor(prijs, vrijeRuimte) {
   if (vrijeRuimte <= 0) return { cls: 'wachten', label: 'Nog even wachten', sub: 'geen ruimte boven je reserve-doel en btw-verplichting' };
   const pct = prijs / vrijeRuimte;
@@ -284,17 +335,22 @@ function renderFinOffertesTab(el) {
   const rows = [...FIN.offertes].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   el.innerHTML = `
     <div class="view-header"><h2>Offertes</h2><button type="button" class="btn btn-red btn-small" id="fin-add-offerte">+ Offerte toevoegen</button></div>
-    ${rows.length ? `<table class="log-table"><thead><tr><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
       ${rows.map((o) => {
         const project = o.project_id ? state.projects.find((p) => p.id === o.project_id) : null;
         return `<tr>
+          <td>${escapeHtml(o.offertenummer || '—')}</td>
           <td>${escapeHtml(o.klant || '—')}</td>
           <td>${escapeHtml(o.omschrijving || '—')}</td>
           <td>${fmtDateShortNL(o.datum)}</td>
           <td>${eur(o.bedrag)}</td>
           <td>${project ? escapeHtml(project.title) : '<span class="hint-dim">—</span>'}</td>
           <td><span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${OFFERTE_STATUS_LABELS[o.status]}</span></td>
-          <td><button type="button" class="btn-icon fin-edit-offerte" data-id="${o.id}">✎</button></td>
+          <td>
+            <button type="button" class="btn-icon fin-pdf-offerte" data-id="${o.id}" title="Download PDF">📄</button>
+            <button type="button" class="btn-icon fin-email-offerte" data-id="${o.id}" title="Verstuur per e-mail">✉</button>
+            <button type="button" class="btn-icon fin-edit-offerte" data-id="${o.id}">✎</button>
+          </td>
         </tr>`;
       }).join('')}
     </tbody></table>` : '<div class="empty-note">Nog geen offertes. Klik op "+ Offerte toevoegen".</div>'}
@@ -303,17 +359,25 @@ function renderFinOffertesTab(el) {
   el.querySelectorAll('.fin-edit-offerte').forEach((btn) => {
     btn.addEventListener('click', () => openOfferteModal(FIN.offertes.find((x) => x.id === btn.dataset.id)));
   });
+  el.querySelectorAll('.fin-pdf-offerte').forEach((btn) => {
+    btn.addEventListener('click', () => handleDownloadPdf('offerte', FIN.offertes.find((x) => x.id === btn.dataset.id)));
+  });
+  el.querySelectorAll('.fin-email-offerte').forEach((btn) => {
+    btn.addEventListener('click', () => handleEmailPdf('offerte', FIN.offertes.find((x) => x.id === btn.dataset.id)));
+  });
 }
 
 function openOfferteModal(existing) {
-  const o = existing || { klant: '', omschrijving: '', datum: todayISO(), bedrag: 0, status: 'verstuurd', project_id: null };
+  const o = existing || { klant: '', klant_email: '', omschrijving: '', datum: todayISO(), bedrag: 0, status: 'verstuurd', project_id: null };
   const projectOptions = state.projects
     .map((p) => `<option value="${p.id}" ${o.project_id === p.id ? 'selected' : ''}>${escapeHtml(p.client_name)} — ${escapeHtml(p.title)}</option>`)
     .join('');
   openModal(`
     <div class="modal-header"><h2>${existing ? 'Offerte bewerken' : 'Offerte toevoegen'}</h2></div>
     <form id="fin-offerte-form">
+      ${existing?.offertenummer ? `<div class="empty-note">Offertenummer: <strong>${escapeHtml(existing.offertenummer)}</strong></div>` : ''}
       <div class="field"><label>Klant</label><input type="text" id="fo-klant" value="${escapeAttr(o.klant || '')}"></div>
+      <div class="field"><label>E-mail klant (voor "Verstuur per e-mail")</label><input type="email" id="fo-klant-email" value="${escapeAttr(o.klant_email || '')}" placeholder="klant@bedrijf.be"></div>
       <div class="field"><label>Omschrijving</label><input type="text" id="fo-omschrijving" value="${escapeAttr(o.omschrijving || '')}"></div>
       <div class="field-row">
         <div class="field"><label>Datum</label><input type="date" id="fo-datum" value="${o.datum || ''}"></div>
@@ -355,6 +419,7 @@ function openOfferteModal(existing) {
     e.preventDefault();
     const payload = {
       klant: document.getElementById('fo-klant').value.trim(),
+      klant_email: document.getElementById('fo-klant-email').value.trim() || null,
       omschrijving: document.getElementById('fo-omschrijving').value.trim(),
       datum: document.getElementById('fo-datum').value || todayISO(),
       bedrag: parseFloat(document.getElementById('fo-bedrag').value) || 0,
@@ -366,6 +431,7 @@ function openOfferteModal(existing) {
         const updated = await updateFinOfferte(existing.id, payload);
         FIN.offertes[FIN.offertes.findIndex((x) => x.id === existing.id)] = updated;
       } else {
+        payload.offertenummer = nextDocumentNumber(FIN.offertes, 'offertenummer');
         FIN.offertes.unshift(await createFinOfferte(payload));
       }
       closeModal();
@@ -380,11 +446,12 @@ function renderFinFacturenTab(el) {
   const rows = [...FIN.facturen].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   el.innerHTML = `
     <div class="view-header"><h2>Facturen</h2><button type="button" class="btn btn-red btn-small" id="fin-add-factuur">+ Factuur toevoegen</button></div>
-    ${rows.length ? `<table class="log-table"><thead><tr><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Vervaldatum</th><th>Bedrag excl.</th><th>Incl. btw</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Vervaldatum</th><th>Bedrag excl.</th><th>Incl. btw</th><th>Status</th><th></th></tr></thead><tbody>
       ${rows.map((f) => {
         const incl = Number(f.bedrag) * (1 + Number(f.btw) / 100);
         const laat = f.status === 'open' && f.vervaldatum && new Date(f.vervaldatum) < new Date(new Date().toDateString());
         return `<tr>
+          <td>${escapeHtml(f.factuurnummer || '—')}</td>
           <td>${escapeHtml(f.klant || '—')}</td>
           <td>${escapeHtml(f.omschrijving || '—')}</td>
           <td>${fmtDateShortNL(f.datum)}</td>
@@ -392,7 +459,11 @@ function renderFinFacturenTab(el) {
           <td>${eur(f.bedrag)}</td>
           <td>${eur(incl)}</td>
           <td><span class="badge-status ${f.status}">${FACTUUR_STATUS_LABELS[f.status]}</span>${laat ? ' <span class="badge-status aanpassing_gevraagd">Laat</span>' : ''}</td>
-          <td><button type="button" class="btn-icon fin-edit-factuur" data-id="${f.id}">✎</button></td>
+          <td>
+            <button type="button" class="btn-icon fin-pdf-factuur" data-id="${f.id}" title="Download PDF">📄</button>
+            <button type="button" class="btn-icon fin-email-factuur" data-id="${f.id}" title="Verstuur per e-mail">✉</button>
+            <button type="button" class="btn-icon fin-edit-factuur" data-id="${f.id}">✎</button>
+          </td>
         </tr>`;
       }).join('')}
     </tbody></table>` : '<div class="empty-note">Nog geen facturen. Klik op "+ Factuur toevoegen".</div>'}
@@ -401,14 +472,22 @@ function renderFinFacturenTab(el) {
   el.querySelectorAll('.fin-edit-factuur').forEach((btn) => {
     btn.addEventListener('click', () => openFactuurModal(FIN.facturen.find((x) => x.id === btn.dataset.id)));
   });
+  el.querySelectorAll('.fin-pdf-factuur').forEach((btn) => {
+    btn.addEventListener('click', () => handleDownloadPdf('factuur', FIN.facturen.find((x) => x.id === btn.dataset.id)));
+  });
+  el.querySelectorAll('.fin-email-factuur').forEach((btn) => {
+    btn.addEventListener('click', () => handleEmailPdf('factuur', FIN.facturen.find((x) => x.id === btn.dataset.id)));
+  });
 }
 
 function openFactuurModal(existing) {
-  const f = existing || { klant: '', omschrijving: '', datum: todayISO(), vervaldatum: todayISO(), bedrag: 0, btw: FIN.settings.default_btw, status: 'open' };
+  const f = existing || { klant: '', klant_email: '', omschrijving: '', datum: todayISO(), vervaldatum: todayISO(), bedrag: 0, btw: FIN.settings.default_btw, status: 'open' };
   openModal(`
     <div class="modal-header"><h2>${existing ? 'Factuur bewerken' : 'Factuur toevoegen'}</h2></div>
     <form id="fin-factuur-form">
+      ${existing?.factuurnummer ? `<div class="empty-note">Factuurnummer: <strong>${escapeHtml(existing.factuurnummer)}</strong></div>` : ''}
       <div class="field"><label>Klant</label><input type="text" id="ff-klant" value="${escapeAttr(f.klant || '')}"></div>
+      <div class="field"><label>E-mail klant (voor "Verstuur per e-mail")</label><input type="email" id="ff-klant-email" value="${escapeAttr(f.klant_email || '')}" placeholder="klant@bedrijf.be"></div>
       <div class="field"><label>Omschrijving</label><input type="text" id="ff-omschrijving" value="${escapeAttr(f.omschrijving || '')}"></div>
       <div class="field-row">
         <div class="field"><label>Factuurdatum</label><input type="date" id="ff-datum" value="${f.datum || ''}"></div>
@@ -450,6 +529,7 @@ function openFactuurModal(existing) {
     e.preventDefault();
     const payload = {
       klant: document.getElementById('ff-klant').value.trim(),
+      klant_email: document.getElementById('ff-klant-email').value.trim() || null,
       omschrijving: document.getElementById('ff-omschrijving').value.trim(),
       datum: document.getElementById('ff-datum').value || todayISO(),
       vervaldatum: document.getElementById('ff-vervaldatum').value || null,
@@ -462,6 +542,7 @@ function openFactuurModal(existing) {
         const updated = await updateFinFactuur(existing.id, payload);
         FIN.facturen[FIN.facturen.findIndex((x) => x.id === existing.id)] = updated;
       } else {
+        payload.factuurnummer = nextDocumentNumber(FIN.facturen, 'factuurnummer');
         FIN.facturen.unshift(await createFinFactuur(payload));
       }
       closeModal();
@@ -844,6 +925,17 @@ function renderFinInstellingenTab(el) {
       <button type="button" class="btn btn-red btn-small" id="fs-save">Opslaan</button>
     </div>
     <div class="detail-section">
+      <h3>Bedrijfsgegevens (voor offerte/factuur-PDF's)</h3>
+      <div class="field"><label>Bedrijfsnaam</label><input type="text" id="fs-bedrijfsnaam" value="${escapeAttr(s.bedrijfsnaam ?? '')}" placeholder="SoenensMedia"></div>
+      <div class="field"><label>Adres</label><input type="text" id="fs-bedrijfsadres" value="${escapeAttr(s.bedrijfsadres ?? '')}" placeholder="Straat 1, 8800 Roeselare"></div>
+      <div class="field-row">
+        <div class="field"><label>Ondernemingsnummer</label><input type="text" id="fs-ondernemingsnummer" value="${escapeAttr(s.ondernemingsnummer ?? '')}" placeholder="BE0123.456.789"></div>
+        <div class="field"><label>IBAN</label><input type="text" id="fs-iban" value="${escapeAttr(s.iban ?? '')}" placeholder="BE00 0000 0000 0000"></div>
+      </div>
+      <div class="field"><label>Betalingstermijn (dagen)</label><input type="number" step="1" id="fs-betalingstermijn" value="${s.betalingstermijn_dagen ?? 30}"></div>
+      <button type="button" class="btn btn-red btn-small" id="fs-save-bedrijf">Opslaan</button>
+    </div>
+    <div class="detail-section">
       <h3>Back-up</h3>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button type="button" class="btn btn-ghost btn-small" id="fs-export">⬇ Exporteer back-up</button>
@@ -864,6 +956,21 @@ function renderFinInstellingenTab(el) {
     try {
       FIN.settings = await saveFinSettings(payload);
       showToast('Instellingen opgeslagen');
+    } catch (err) { showToast(err.message, true); }
+  });
+
+  document.getElementById('fs-save-bedrijf').addEventListener('click', async () => {
+    const payload = {
+      ...FIN.settings,
+      bedrijfsnaam: document.getElementById('fs-bedrijfsnaam').value.trim() || null,
+      bedrijfsadres: document.getElementById('fs-bedrijfsadres').value.trim() || null,
+      ondernemingsnummer: document.getElementById('fs-ondernemingsnummer').value.trim() || null,
+      iban: document.getElementById('fs-iban').value.trim() || null,
+      betalingstermijn_dagen: parseInt(document.getElementById('fs-betalingstermijn').value, 10) || 30,
+    };
+    try {
+      FIN.settings = await saveFinSettings(payload);
+      showToast('Bedrijfsgegevens opgeslagen');
     } catch (err) { showToast(err.message, true); }
   });
 

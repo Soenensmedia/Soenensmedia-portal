@@ -234,9 +234,48 @@ table.log-table tr:last-child td { border-bottom: none; }
   background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
   padding: 18px 20px; margin-bottom: 18px;
 }
+
+.client-hero {
+  height: 180px; margin: -18px -20px 18px; border-radius: 8px 8px 0 0;
+  background-size: cover; background-position: center; background-color: var(--paneld);
+  display: flex; align-items: center; justify-content: center;
+}
+.client-hero-placeholder {
+  font-family: 'Bebas Neue', sans-serif; font-size: 3rem; letter-spacing: .05em;
+  color: var(--text-faint); border: 2px solid var(--line); border-radius: 50%;
+  width: 84px; height: 84px; display: flex; align-items: center; justify-content: center;
+}
+
 .client-project-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .client-project-header .title { font-size: 1.2rem; color: #fff; font-family: 'Bebas Neue', sans-serif; letter-spacing: .04em; }
 .client-project-header .deadline { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.status-stepper { display: flex; margin: 20px 0 4px; overflow-x: auto; padding: 4px 2px 8px; }
+.stepper-step { flex: 1; min-width: 76px; text-align: center; position: relative; }
+.stepper-step:not(:last-child)::after {
+  content: ''; position: absolute; top: 7px; left: 55%; width: 90%; height: 2px;
+  background: var(--line); z-index: 0;
+}
+.stepper-step.done:not(:last-child)::after { background: var(--red); }
+.stepper-dot {
+  width: 16px; height: 16px; border-radius: 50%; background: var(--paneld);
+  border: 2px solid var(--line); margin: 0 auto 6px; position: relative; z-index: 1;
+}
+.stepper-step.done .stepper-dot { background: var(--red); border-color: var(--red); }
+.stepper-step.current .stepper-dot { box-shadow: 0 0 0 4px rgba(224,53,53,.25); }
+.stepper-label { font-size: 9.5px; color: var(--text-faint); line-height: 1.3; }
+.stepper-step.done .stepper-label { color: var(--text-dim); }
+.stepper-step.current .stepper-label { color: #fff; font-weight: 600; }
+
+.client-meta-row { display: flex; gap: 24px; margin: 16px 0; flex-wrap: wrap; }
+.client-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.client-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+.client-meta-item span:last-child { font-size: 13px; color: var(--text); }
+
+.client-empty-state {
+  font-size: 12.5px; color: var(--text-faint); background: var(--paneld);
+  border: 1px dashed var(--line); border-radius: 6px; padding: 14px 16px; text-align: center;
+}
 
 .approve-banner { font-size: 11px; padding: 6px 12px; border-radius: 5px; white-space: nowrap; }
 .approve-banner.approved { background: #123a1e; color: #6fe08a; border: 1px solid #1e5a30; }

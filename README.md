@@ -308,3 +308,14 @@ In het offerte-formulier (zowel bij **"+ Offerte toevoegen"** als bij bewerken) 
 
 1. Maak een offerte of factuur aan zoals gewoonlijk, en vul het **e-mailadres van de klant** in als je hem per mail wil kunnen versturen. Optioneel: importeer je eigen bestand i.p.v. de auto-gegenereerde PDF te gebruiken.
 2. Klant akkoord? Klik bij die offerte op **🧾** om ze in 1 klik om te zetten naar een factuur — pas eventueel het BTW-percentage nog aan (offertes houden geen BTW bij, facturen wel) en sla op.
+
+## Fase 10 — Klant-projectpagina voller & levendiger (nieuw)
+
+De klant-detailpagina oogde kaal bij een project met weinig foto's/scripts. Toegevoegd, zonder dat jij hier iets voor moet instellen:
+
+- **Statusbalk (stepper)**: toont visueel waar het project in het traject zit (Nieuw → Shooten → Editen → ... → Afgerond), met de huidige stap gemarkeerd — werkt voor élk project, ook zonder verder ingevulde content.
+- **Hero-afbeelding**: de eerste foto van het project verschijnt als banner bovenaan; zonder foto's toont een net "SM"-logo-badge i.p.v. lege ruimte.
+- **Info-strook**: deadline + "opdracht sinds"-datum, altijd zichtbaar.
+- **Nette lege-staat-kaartjes** i.p.v. secties die gewoon verdwijnen: "Briefing komt hier binnenkort", "Nog geen ideeën/scripts", "Nog geen foto's" — de pagina behoudt zo altijd dezelfde volledige structuur, ook vroeg in een project.
+
+Geen SQL of instellingen nodig — dit is puur visueel, meteen zichtbaar na herladen.

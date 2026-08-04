@@ -1,4 +1,4 @@
-import { state, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
+import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
 import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept } from './data.js';
 import { showToast } from './toast.js';
@@ -144,9 +144,31 @@ function conceptCardHtml(c, conceptFeedback) {
     </div>`;
 }
 
+function statusStepperHtml(status) {
+  const doneStatuses = ['afgerond', 'verzonden'];
+  const currentIndex = STATUS_ORDER.indexOf(status);
+  return `
+    <div class="status-stepper">
+      ${STATUS_ORDER.map((s, i) => {
+        const isDone = i < currentIndex || (doneStatuses.includes(status) && i <= currentIndex);
+        const isCurrent = s === status;
+        return `
+          <div class="stepper-step ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}">
+            <div class="stepper-dot"></div>
+            <div class="stepper-label">${escapeHtml(STATUS_LABELS[s])}</div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function projectDetailHtml(p, feedback, photos, concepts) {
+  const cover = photos[0]?.url;
   return `
     <div class="client-project-card">
+      <div class="client-hero" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
+        ${!cover ? '<div class="client-hero-placeholder">SM</div>' : ''}
+      </div>
+
       <div class="client-project-header">
         <div>
           <div class="title">${escapeHtml(p.title)}</div>
@@ -157,30 +179,36 @@ function projectDetailHtml(p, feedback, photos, concepts) {
           : `<button class="btn btn-red btn-small" id="approve-btn-${p.id}">Goedkeuren</button>`}
       </div>
 
-      ${(p.client_brief || p.deliverables) ? `
-        <div class="detail-section">
-          ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : ''}
-          ${p.deliverables ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>` : ''}
-        </div>` : ''}
+      ${statusStepperHtml(p.status)}
 
-      ${concepts.length ? `
-        <div class="detail-section">
-          <h3>Ideeën & Scripts</h3>
-          <div class="concept-list">
-            ${concepts.map((c) => conceptCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}
-          </div>
-        </div>` : ''}
+      <div class="client-meta-row">
+        ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
+        ${p.created_at ? `<div class="client-meta-item"><span class="client-meta-label">Opdracht sinds</span><span>${fmtDate(new Date(p.created_at))}</span></div>` : ''}
+      </div>
 
-      ${photos.length ? `
-        <div class="detail-section">
-          <div class="section-header-row">
-            <h3>Foto's</h3>
-            <button type="button" class="btn btn-ghost btn-small" id="download-all-btn">Download alles</button>
-          </div>
-          <div class="photo-grid gallery-mosaic">
-            ${photos.map((ph, i) => `<div class="photo-thumb" data-index="${i}"><img src="${escapeAttr(ph.url)}" alt=""></div>`).join('')}
-          </div>
-        </div>` : ''}
+      <div class="detail-section">
+        ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : '<div class="client-empty-state">✍️ De briefing komt hier binnenkort te staan.</div>'}
+        ${p.deliverables
+          ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>`
+          : ''}
+      </div>
+
+      <div class="detail-section">
+        <h3>Ideeën & Scripts</h3>
+        ${concepts.length
+          ? `<div class="concept-list">${concepts.map((c) => conceptCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}</div>`
+          : '<div class="client-empty-state">💡 Nog geen ideeën of scripts toegevoegd — die verschijnen hier zodra ze klaarstaan.</div>'}
+      </div>
+
+      <div class="detail-section">
+        <div class="section-header-row">
+          <h3>Foto's</h3>
+          ${photos.length ? `<button type="button" class="btn btn-ghost btn-small" id="download-all-btn">Download alles</button>` : ''}
+        </div>
+        ${photos.length
+          ? `<div class="photo-grid gallery-mosaic">${photos.map((ph, i) => `<div class="photo-thumb" data-index="${i}"><img src="${escapeAttr(ph.url)}" alt=""></div>`).join('')}</div>`
+          : '<div class="client-empty-state">📷 Nog geen foto\'s — deze verschijnen hier zodra de shoot achter de rug is.</div>'}
+      </div>
 
       ${p.frame_io_url ? `
         <div class="detail-section">

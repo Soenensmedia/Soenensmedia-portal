@@ -6,7 +6,7 @@ import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
 import { renderClients, openClientForm } from './clients.js';
 import { renderFinance } from './finance.js';
-import { renderScripting, openConceptForm } from './scripting.js';
+import { renderScripting, openConceptForm, importScriptFile } from './scripting.js';
 import { renderDeadlines } from './deadlines.js';
 import { renderContent } from './content.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
@@ -41,6 +41,11 @@ document.getElementById('client-logout-btn').addEventListener('click', async () 
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
 document.getElementById('new-time-entry-btn').addEventListener('click', openNewTimeEntryModal);
 document.getElementById('scripting-add-btn').addEventListener('click', () => openConceptForm(state.activeScriptingProjectId));
+document.getElementById('scripting-import-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) importScriptFile(state.activeScriptingProjectId, file);
+  e.target.value = '';
+});
 document.getElementById('new-client-btn').addEventListener('click', () => openClientForm());
 document.getElementById('new-equipment-btn').addEventListener('click', () => openEquipmentForm());
 document.getElementById('prev-week-btn').addEventListener('click', () => shiftWeek(-1));

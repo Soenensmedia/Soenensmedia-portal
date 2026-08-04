@@ -218,6 +218,12 @@ Voer [`sql/007_project_concepts.sql`](sql/007_project_concepts.sql) uit in de SQ
 2. De klant ziet dit bij zijn project, kan het goedkeuren of feedback typen specifiek op dat idee/script.
 3. De status wordt automatisch **"Goedgekeurd"** zodra de klant op Goedkeuren klikt — jij ziet dit meteen terug op de Scripting-pagina.
 
+### Sjablonen & script importeren (uitbreiding)
+
+Bij "+ Idee/script toevoegen" staat nu ook een **sjabloon-keuzelijst**: Hook-Body-CTA (reel/short), Testimonial (Q&A), BTS-verhaal, Tips-lijst, Aftermovie-structuur. Een sjabloon kiezen vult het tekstvak met een startstructuur die je verder invult — puur een handig startpunt, geen verplichting.
+
+De knop **"Importeer script"** naast "+ toevoegen" laat je een `.txt`- of `.md`-bestand kiezen (bv. een script dat je elders al typte, of dat je uit een gesprek met Claude kopieerde en als tekstbestand bewaarde) — de bestandsnaam wordt de titel, de inhoud van het bestand komt in het tekstvak, en je kan het meteen bewerken en opslaan zoals een normaal script. Word/PDF-bestanden worden nog niet ondersteund — sla ze eerst op als platte tekst (.txt).
+
 ## Fase 8 — Deadlines, Klanten/Retainers, Financiën-uitbreiding, Equipment, Content Planning (nieuw)
 
 Grote uitbreiding op basis van je lijst met gewenste tabs. In plaats van elk punt letterlijk als aparte tab te bouwen (dan wordt de balk bovenaan onwerkbaar), is dit slim gegroepeerd op wat er al bestond:

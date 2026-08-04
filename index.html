@@ -127,7 +127,12 @@
     <section id="view-scripting" class="view hidden">
       <div class="view-header">
         <h1>Scripting</h1>
-        <button class="btn btn-red" id="scripting-add-btn">+ Idee/script toevoegen</button>
+        <div style="display:flex; gap:8px;">
+          <label class="btn btn-ghost" style="cursor:pointer;">Importeer script
+            <input type="file" id="scripting-import-input" accept=".txt,.md" style="display:none;">
+          </label>
+          <button class="btn btn-red" id="scripting-add-btn">+ Idee/script toevoegen</button>
+        </div>
       </div>
       <div class="field" id="scripting-project-field">
         <label>Opdracht</label>

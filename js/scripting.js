@@ -4,6 +4,29 @@ import { fetchProjectConcepts, createConcept, updateConcept, deleteConcept } fro
 import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
 
+const TEMPLATES = {
+  hook_body_cta: {
+    label: 'Hook — Body — CTA (reel/short)',
+    text: 'HOOK (eerste 3 sec):\n\n\nBODY:\n\n\nCTA:\n',
+  },
+  testimonial: {
+    label: 'Testimonial (Q&A)',
+    text: 'VRAAG 1:\nANTWOORD:\n\nVRAAG 2:\nANTWOORD:\n\nVRAAG 3:\nANTWOORD:\n',
+  },
+  bts: {
+    label: 'BTS-verhaal',
+    text: 'CONTEXT (wat gaan we zien):\n\n\nMOMENT / VERHAAL:\n\n\nAFSLUITER:\n',
+  },
+  tips: {
+    label: 'Tips-lijst',
+    text: 'INTRO-ZIN:\n\nTIP 1:\nTIP 2:\nTIP 3:\n\nAFSLUITER / CTA:\n',
+  },
+  aftermovie: {
+    label: 'Aftermovie-structuur',
+    text: 'OPENER (sfeer/energie):\n\n\nHOOGTEPUNTEN (chronologisch):\n-\n-\n-\n\nCLOSING SHOT:\n',
+  },
+};
+
 export function renderScripting() {
   const select = document.getElementById('scripting-project-select');
   const container = document.getElementById('scripting-container');
@@ -94,17 +117,24 @@ export function openConceptForm(projectId, concept = null) {
     showToast('Kies eerst een opdracht hierboven.', true);
     return;
   }
+  const isEdit = !!concept?.id;
   openModal(`
-    <div class="modal-header"><h2>${concept ? 'Idee/script bewerken' : 'Idee/script toevoegen'}</h2></div>
+    <div class="modal-header"><h2>${isEdit ? 'Idee/script bewerken' : 'Idee/script toevoegen'}</h2></div>
     <form id="concept-form">
       <div class="field"><label>Titel</label><input type="text" id="concept-title" value="${escapeAttr(concept?.title ?? '')}" required></div>
       <div class="field"><label>Type</label>
         <select id="concept-type">
-          <option value="idee" ${concept?.type === 'idee' || !concept ? 'selected' : ''}>Idee</option>
-          <option value="script" ${concept?.type === 'script' ? 'selected' : ''}>Script</option>
+          <option value="idee" ${concept?.type === 'idee' ? 'selected' : ''}>Idee</option>
+          <option value="script" ${concept?.type === 'script' || !concept?.type ? 'selected' : ''}>Script</option>
         </select>
       </div>
-      <div class="field"><label>Inhoud</label><textarea id="concept-content" rows="10" placeholder="Omschrijving van het idee, of het volledige script...">${escapeHtml(concept?.content ?? '')}</textarea></div>
+      <div class="field"><label>Sjabloon (optioneel — vult de inhoud met een startstructuur)</label>
+        <select id="concept-template">
+          <option value="">— Geen —</option>
+          ${Object.entries(TEMPLATES).map(([key, t]) => `<option value="${key}">${escapeHtml(t.label)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Inhoud</label><textarea id="concept-content" rows="12" placeholder="Omschrijving van het idee, of het volledige script...">${escapeHtml(concept?.content ?? '')}</textarea></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -117,6 +147,18 @@ export function openConceptForm(projectId, concept = null) {
 
   document.getElementById('concept-cancel').addEventListener('click', closeModal);
 
+  document.getElementById('concept-template').addEventListener('change', (e) => {
+    const key = e.target.value;
+    if (!key) return;
+    const textarea = document.getElementById('concept-content');
+    if (textarea.value.trim() && !confirm('Dit vervangt de huidige inhoud van het tekstvak. Doorgaan?')) {
+      e.target.value = '';
+      return;
+    }
+    textarea.value = TEMPLATES[key].text;
+    e.target.value = '';
+  });
+
   document.getElementById('concept-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -125,7 +167,7 @@ export function openConceptForm(projectId, concept = null) {
       content: document.getElementById('concept-content').value.trim() || null,
     };
     try {
-      if (concept) {
+      if (isEdit) {
         await updateConcept(concept.id, payload);
         showToast('Idee/script bijgewerkt');
       } else {
@@ -138,4 +180,19 @@ export function openConceptForm(projectId, concept = null) {
       showToast(err.message, true);
     }
   });
+}
+
+// ── script importeren (.txt / .md) ──────────────────────
+export function importScriptFile(projectId, file) {
+  if (!projectId) {
+    showToast('Kies eerst een opdracht hierboven.', true);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const title = file.name.replace(/\.(txt|md)$/i, '');
+    openConceptForm(projectId, { title, type: 'script', content: reader.result });
+  };
+  reader.onerror = () => showToast('Kon het bestand niet lezen.', true);
+  reader.readAsText(file);
 }

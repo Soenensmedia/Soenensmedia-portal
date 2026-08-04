@@ -357,22 +357,17 @@ function renderFinOffertesTab(el) {
   const rows = [...FIN.offertes].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   el.innerHTML = `
     <div class="view-header"><h2>Offertes</h2><button type="button" class="btn btn-red btn-small" id="fin-add-offerte">+ Offerte toevoegen</button></div>
-    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th>Eigen bestand</th><th></th></tr></thead><tbody>
+    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
       ${rows.map((o) => {
         const project = o.project_id ? state.projects.find((p) => p.id === o.project_id) : null;
         return `<tr>
-          <td>${escapeHtml(o.offertenummer || '—')}</td>
+          <td>${escapeHtml(o.offertenummer || '—')}${o.bestand_path ? ' 📎' : ''}</td>
           <td>${escapeHtml(o.klant || '—')}</td>
           <td>${escapeHtml(o.omschrijving || '—')}</td>
           <td>${fmtDateShortNL(o.datum)}</td>
           <td>${eur(o.bedrag)}</td>
           <td>${project ? escapeHtml(project.title) : '<span class="hint-dim">—</span>'}</td>
           <td><span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${OFFERTE_STATUS_LABELS[o.status]}</span></td>
-          <td>
-            ${o.bestand_path
-              ? `<a href="#" class="fin-view-offerte-file" data-id="${o.id}">📄 ${escapeHtml(o.bestand_naam || 'bekijken')}</a> <button type="button" class="btn-icon fin-remove-offerte-file" data-id="${o.id}">✕</button>`
-              : `<label class="fin-upload-label">⬆ Importeren<input type="file" class="fin-upload-offerte-input" data-id="${o.id}" accept="application/pdf,image/*,.doc,.docx" style="display:none;"></label>`}
-          </td>
           <td>
             <button type="button" class="btn-icon fin-pdf-offerte" data-id="${o.id}" title="Download">📄</button>
             <button type="button" class="btn-icon fin-email-offerte" data-id="${o.id}" title="Verstuur per e-mail">✉</button>
@@ -395,41 +390,6 @@ function renderFinOffertesTab(el) {
   });
   el.querySelectorAll('.fin-to-factuur').forEach((btn) => {
     btn.addEventListener('click', () => convertOfferteToFactuur(FIN.offertes.find((x) => x.id === btn.dataset.id)));
-  });
-  el.querySelectorAll('.fin-upload-offerte-input').forEach((input) => {
-    input.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const offerte = FIN.offertes.find((x) => x.id === input.dataset.id);
-      try {
-        const path = await uploadFinFactuurFile(offerte.id, file);
-        const updated = await updateFinOfferte(offerte.id, { bestand_path: path, bestand_naam: file.name });
-        FIN.offertes[FIN.offertes.findIndex((x) => x.id === offerte.id)] = updated;
-        renderFinSubview();
-        showToast('Offerte-bestand geïmporteerd');
-      } catch (err) { showToast(err.message, true); }
-    });
-  });
-  el.querySelectorAll('.fin-view-offerte-file').forEach((a) => {
-    a.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const offerte = FIN.offertes.find((x) => x.id === a.dataset.id);
-      try {
-        window.open(await getFinFactuurUrl(offerte.bestand_path), '_blank');
-      } catch (err) { showToast(err.message, true); }
-    });
-  });
-  el.querySelectorAll('.fin-remove-offerte-file').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const offerte = FIN.offertes.find((x) => x.id === btn.dataset.id);
-      if (!confirm('Geïmporteerd offerte-bestand verwijderen?')) return;
-      try {
-        await deleteFinFactuurFile(offerte.bestand_path);
-        const updated = await updateFinOfferte(offerte.id, { bestand_path: null, bestand_naam: null });
-        FIN.offertes[FIN.offertes.findIndex((x) => x.id === offerte.id)] = updated;
-        renderFinSubview();
-      } catch (err) { showToast(err.message, true); }
-    });
   });
 }
 
@@ -471,6 +431,15 @@ function openOfferteModal(existing) {
           <option value="geweigerd" ${o.status === 'geweigerd' ? 'selected' : ''}>Geweigerd</option>
         </select>
       </div>
+      <div class="field" id="fo-file-field">
+        <label>Eigen offerte-bestand (optioneel — i.p.v. de auto-gegenereerde PDF bij Download/Verstuur)</label>
+        ${o.bestand_path
+          ? `<div class="field-row" style="align-items:center;">
+               <a href="#" id="fo-view-file">📄 ${escapeHtml(o.bestand_naam || 'bekijken')}</a>
+               <button type="button" class="btn-icon" id="fo-remove-file">✕</button>
+             </div>`
+          : `<input type="file" id="fo-bestand-input" accept="application/pdf,image/*,.doc,.docx">`}
+      </div>
       <div class="modal-actions">
         ${existing ? '<button type="button" class="btn btn-danger" id="fo-delete">Verwijderen</button>' : '<span></span>'}
         <div class="modal-actions-right">
@@ -493,6 +462,22 @@ function openOfferteModal(existing) {
       } catch (err) { showToast(err.message, true); }
     });
   }
+  document.getElementById('fo-view-file')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      window.open(await getFinFactuurUrl(existing.bestand_path), '_blank');
+    } catch (err) { showToast(err.message, true); }
+  });
+  document.getElementById('fo-remove-file')?.addEventListener('click', async () => {
+    if (!confirm('Geïmporteerd offerte-bestand verwijderen?')) return;
+    try {
+      await deleteFinFactuurFile(existing.bestand_path);
+      const updated = await updateFinOfferte(existing.id, { bestand_path: null, bestand_naam: null });
+      FIN.offertes[FIN.offertes.findIndex((x) => x.id === existing.id)] = updated;
+      openOfferteModal(updated);
+      showToast('Bestand verwijderd');
+    } catch (err) { showToast(err.message, true); }
+  });
   document.getElementById('fin-offerte-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -504,13 +489,23 @@ function openOfferteModal(existing) {
       project_id: document.getElementById('fo-project').value || null,
       status: document.getElementById('fo-status').value,
     };
+    const file = document.getElementById('fo-bestand-input')?.files[0] || null;
     try {
+      let saved;
       if (existing) {
-        const updated = await updateFinOfferte(existing.id, payload);
-        FIN.offertes[FIN.offertes.findIndex((x) => x.id === existing.id)] = updated;
+        saved = await updateFinOfferte(existing.id, payload);
       } else {
         payload.offertenummer = nextDocumentNumber(FIN.offertes, 'offertenummer');
-        FIN.offertes.unshift(await createFinOfferte(payload));
+        saved = await createFinOfferte(payload);
+      }
+      if (file) {
+        const path = await uploadFinFactuurFile(saved.id, file);
+        saved = await updateFinOfferte(saved.id, { bestand_path: path, bestand_naam: file.name });
+      }
+      if (existing) {
+        FIN.offertes[FIN.offertes.findIndex((x) => x.id === existing.id)] = saved;
+      } else {
+        FIN.offertes.unshift(saved);
       }
       closeModal();
       renderFinSubview();

@@ -294,7 +294,7 @@ Elke nieuwe offerte/factuur krijgt automatisch een **volgnummer** (bv. `2026-001
 
 ### Eigen offerte importeren
 
-Bij Offertes staat een kolom **"Eigen bestand"**: klik op **"⬆ Importeren"** om je eigen offerte (PDF, Word, afbeelding — bv. eentje die je zelf mooier hebt opgemaakt) te uploaden bij die offerte. Zodra dat bestand er staat, gebruiken **📄 Download** en **✉ Verstuur** automatisch dát bestand in plaats van de auto-gegenereerde PDF — je eigen versie heeft dus altijd voorrang. Verwijderen kan met het ✕-knopje ernaast, waarna het weer terugvalt op de auto-gegenereerde PDF.
+In het offerte-formulier (zowel bij **"+ Offerte toevoegen"** als bij bewerken) staat onderaan het veld **"Eigen offerte-bestand"** — kies daar je eigen PDF/Word/afbeelding (bv. eentje die je zelf mooier hebt opgemaakt) en sla op. Zodra dat bestand er is, gebruiken **📄 Download** en **✉ Verstuur** automatisch dát bestand in plaats van de auto-gegenereerde PDF — je eigen versie heeft dus altijd voorrang (herkenbaar aan het 📎-icoontje bij het offertenummer in de tabel). Bij bewerken kan je het bestand bekijken of met ✕ verwijderen, waarna het weer terugvalt op de auto-gegenereerde PDF.
 
 ### Eenmalig instellen
 

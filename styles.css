@@ -266,6 +266,26 @@ table.log-table tr:last-child td { border-bottom: none; }
 .concept-card .concept-approve-btn { margin-bottom: 10px; }
 .concept-feedback { border-top: 1px solid var(--line); padding-top: 10px; }
 
+/* ── scène-editor (Scripting) ── */
+.scene-row {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.scene-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.scene-row-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dim); }
+.scene-row textarea { font-size: 13px; }
+
+/* ── scène-weergave (readonly, admin + klant) ── */
+.scene-readonly-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.scene-readonly-row { background: var(--paneld); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.scene-readonly-num { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); margin-bottom: 6px; }
+.scene-readonly-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.scene-readonly-label { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); display: block; margin-bottom: 2px; }
+.scene-readonly-cols div div { font-size: 13px; color: var(--text); white-space: pre-line; }
+@media (max-width: 520px) {
+  .scene-readonly-cols { grid-template-columns: 1fr; }
+}
+
 #scripting-container .concept-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-items: start; }
 #scripting-container .concept-card-content { max-height: 220px; overflow-y: auto; }
 

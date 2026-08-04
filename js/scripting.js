@@ -1,5 +1,5 @@
 import { state, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS } from './state.js';
-import { escapeHtml, escapeAttr } from './util.js';
+import { escapeHtml, escapeAttr, parseScriptScenes, serializeScriptScenes, renderConceptContentHtml } from './util.js';
 import { fetchProjectConcepts, createConcept, updateConcept, deleteConcept } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -104,7 +104,7 @@ function scriptingCardHtml(c) {
         <span class="badge-status ${c.status}">${CONCEPT_STATUS_LABELS[c.status] ?? c.status}</span>
       </div>
       <div class="concept-card-title">${escapeHtml(c.title)}</div>
-      ${c.content ? `<p class="concept-card-content">${escapeHtml(c.content)}</p>` : ''}
+      ${renderConceptContentHtml(c.content)}
       <div class="concept-row-actions">
         <button type="button" class="btn btn-ghost btn-small concept-edit" data-id="${c.id}">Bewerken</button>
         <button type="button" class="btn btn-ghost btn-small concept-delete" data-id="${c.id}">Verwijderen</button>
@@ -112,29 +112,110 @@ function scriptingCardHtml(c) {
     </div>`;
 }
 
-export function openConceptForm(projectId, concept = null) {
+function sceneRowHtml(index, scene = {}) {
+  return `
+    <div class="scene-row" data-index="${index}">
+      <div class="scene-row-header">
+        <span class="scene-row-label">Scène ${index + 1}</span>
+        <button type="button" class="btn-icon scene-remove">✕</button>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Visueel (wat zie je)</label><textarea class="scene-visueel" rows="2">${escapeHtml(scene.visueel ?? '')}</textarea></div>
+        <div class="field"><label>Tekst / voice-over</label><textarea class="scene-tekst" rows="2">${escapeHtml(scene.tekst ?? '')}</textarea></div>
+      </div>
+      <div class="field" style="max-width:160px;"><label>Duur (sec, optioneel)</label><input type="number" min="0" class="scene-duur" value="${scene.duur ?? ''}"></div>
+    </div>`;
+}
+
+function renumberScenes() {
+  document.querySelectorAll('#scenes-list .scene-row').forEach((row, i) => {
+    row.dataset.index = i;
+    row.querySelector('.scene-row-label').textContent = `Scène ${i + 1}`;
+  });
+}
+
+function wireSceneRow(row) {
+  row.querySelector('.scene-remove').addEventListener('click', () => {
+    row.remove();
+    renumberScenes();
+  });
+}
+
+function contentAreaHtml(mode, scenes, freeText) {
+  if (mode === 'scenes') {
+    return `
+      <div class="field"><label>Scènes</label></div>
+      <div id="scenes-list">${scenes.map((s, i) => sceneRowHtml(i, s)).join('')}</div>
+      <button type="button" class="btn btn-ghost btn-small" id="scene-add">+ Scène toevoegen</button>
+    `;
+  }
+  return `<div class="field"><label>Inhoud</label><textarea id="concept-content" rows="12" placeholder="Omschrijving van het idee, of het volledige script...">${escapeHtml(freeText)}</textarea></div>`;
+}
+
+function wireContentArea(mode) {
+  if (mode !== 'scenes') return;
+  document.querySelectorAll('#scenes-list .scene-row').forEach(wireSceneRow);
+  document.getElementById('scene-add').addEventListener('click', () => {
+    const list = document.getElementById('scenes-list');
+    const idx = list.querySelectorAll('.scene-row').length;
+    list.insertAdjacentHTML('beforeend', sceneRowHtml(idx, {}));
+    wireSceneRow(list.lastElementChild);
+  });
+}
+
+function readScenesFromDom() {
+  return Array.from(document.querySelectorAll('#scenes-list .scene-row')).map((row) => ({
+    visueel: row.querySelector('.scene-visueel').value.trim(),
+    tekst: row.querySelector('.scene-tekst').value.trim(),
+    duur: row.querySelector('.scene-duur').value ? Number(row.querySelector('.scene-duur').value) : null,
+  }));
+}
+
+function scenesToFreeText(scenes) {
+  return scenes.map((s, i) => `Scène ${i + 1}${s.duur ? ` (${s.duur}s)` : ''}\nVisueel: ${s.visueel}\nTekst: ${s.tekst}`).join('\n\n');
+}
+
+export function openConceptForm(projectId, concept = null, formState = null) {
   if (!projectId) {
     showToast('Kies eerst een opdracht hierboven.', true);
     return;
   }
   const isEdit = !!concept?.id;
+
+  // formState draagt de in-progress bewerkingen over bij een structurele herrender
+  // (type/modus wisselen) — titel, huidige scènes/vrije tekst blijven zo behouden.
+  const type = formState?.type ?? (concept?.type === 'idee' ? 'idee' : 'script');
+  const existingScenes = formState?.scenes ?? parseScriptScenes(concept?.content);
+  const mode = formState?.mode ?? (type === 'script' ? (existingScenes ? 'scenes' : (concept?.content ? 'vrij' : 'scenes')) : 'vrij');
+  const scenes = mode === 'scenes' ? (existingScenes && existingScenes.length ? existingScenes : [{}]) : [];
+  const freeText = formState?.freeText ?? (mode === 'vrij' ? (existingScenes ? '' : (concept?.content ?? '')) : '');
+  const titleValue = formState?.title ?? (concept?.title ?? '');
+
   openModal(`
     <div class="modal-header"><h2>${isEdit ? 'Idee/script bewerken' : 'Idee/script toevoegen'}</h2></div>
     <form id="concept-form">
-      <div class="field"><label>Titel</label><input type="text" id="concept-title" value="${escapeAttr(concept?.title ?? '')}" required></div>
+      <div class="field"><label>Titel</label><input type="text" id="concept-title" value="${escapeAttr(titleValue)}" required></div>
       <div class="field"><label>Type</label>
         <select id="concept-type">
-          <option value="idee" ${concept?.type === 'idee' ? 'selected' : ''}>Idee</option>
-          <option value="script" ${concept?.type === 'script' || !concept?.type ? 'selected' : ''}>Script</option>
+          <option value="idee" ${type === 'idee' ? 'selected' : ''}>Idee</option>
+          <option value="script" ${type === 'script' ? 'selected' : ''}>Script</option>
         </select>
       </div>
-      <div class="field"><label>Sjabloon (optioneel — vult de inhoud met een startstructuur)</label>
+      <div class="field" id="concept-mode-field" style="${type === 'script' ? '' : 'display:none;'}">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="concept-scenes-mode" style="width:auto;" ${mode === 'scenes' ? 'checked' : ''}>
+          Scène-structuur gebruiken (visueel + tekst per scène, i.p.v. één tekstvak)
+        </label>
+      </div>
+      ${mode === 'vrij' ? `
+      <div class="field">
+        <label>Sjabloon (optioneel — vult de inhoud met een startstructuur)</label>
         <select id="concept-template">
           <option value="">— Geen —</option>
           ${Object.entries(TEMPLATES).map(([key, t]) => `<option value="${key}">${escapeHtml(t.label)}</option>`).join('')}
         </select>
-      </div>
-      <div class="field"><label>Inhoud</label><textarea id="concept-content" rows="12" placeholder="Omschrijving van het idee, of het volledige script...">${escapeHtml(concept?.content ?? '')}</textarea></div>
+      </div>` : ''}
+      <div id="concept-content-area">${contentAreaHtml(mode, scenes, freeText)}</div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -146,8 +227,38 @@ export function openConceptForm(projectId, concept = null) {
   `);
 
   document.getElementById('concept-cancel').addEventListener('click', closeModal);
+  wireContentArea(mode);
 
-  document.getElementById('concept-template').addEventListener('change', (e) => {
+  function currentFormState(overrides = {}) {
+    return {
+      title: document.getElementById('concept-title').value,
+      type,
+      mode,
+      scenes: mode === 'scenes' ? readScenesFromDom() : scenes,
+      freeText: mode === 'vrij' ? (document.getElementById('concept-content')?.value ?? '') : freeText,
+      ...overrides,
+    };
+  }
+
+  document.getElementById('concept-type').addEventListener('change', (e) => {
+    const newType = e.target.value;
+    if (newType === type) return;
+    // van script->idee met scènes: platslaan naar leesbare tekst zodat niets verloren gaat
+    const carry = (newType === 'idee' && mode === 'scenes')
+      ? { type: newType, mode: 'vrij', freeText: scenesToFreeText(readScenesFromDom()) }
+      : { type: newType };
+    openConceptForm(projectId, concept, currentFormState(carry));
+  });
+
+  document.getElementById('concept-scenes-mode')?.addEventListener('change', (e) => {
+    const newMode = e.target.checked ? 'scenes' : 'vrij';
+    const carry = newMode === 'scenes'
+      ? { mode: newMode, scenes: (() => { const t = document.getElementById('concept-content')?.value ?? ''; return t ? [{ visueel: '', tekst: t }] : [{}]; })() }
+      : { mode: newMode, freeText: scenesToFreeText(readScenesFromDom()) };
+    openConceptForm(projectId, concept, currentFormState(carry));
+  });
+
+  document.getElementById('concept-template')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (!key) return;
     const textarea = document.getElementById('concept-content');
@@ -161,10 +272,14 @@ export function openConceptForm(projectId, concept = null) {
 
   document.getElementById('concept-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const finalType = document.getElementById('concept-type').value;
+    const finalContent = mode === 'scenes'
+      ? serializeScriptScenes(readScenesFromDom().filter((s) => s.visueel || s.tekst || s.duur))
+      : (document.getElementById('concept-content').value.trim() || null);
     const payload = {
       title: document.getElementById('concept-title').value.trim(),
-      type: document.getElementById('concept-type').value,
-      content: document.getElementById('concept-content').value.trim() || null,
+      type: finalType,
+      content: finalContent,
     };
     try {
       if (isEdit) {

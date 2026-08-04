@@ -224,6 +224,14 @@ Bij "+ Idee/script toevoegen" staat nu ook een **sjabloon-keuzelijst**: Hook-Bod
 
 De knop **"Importeer script"** naast "+ toevoegen" laat je een `.txt`- of `.md`-bestand kiezen (bv. een script dat je elders al typte, of dat je uit een gesprek met Claude kopieerde en als tekstbestand bewaarde) — de bestandsnaam wordt de titel, de inhoud van het bestand komt in het tekstvak, en je kan het meteen bewerken en opslaan zoals een normaal script. Word/PDF-bestanden worden nog niet ondersteund — sla ze eerst op als platte tekst (.txt).
 
+### Scène-structuur voor scripts (uitbreiding)
+
+Een script is nu standaard opgebouwd uit **scènes** i.p.v. één groot tekstvak: per scène vul je apart **Visueel** (wat je ziet) en **Tekst/voice-over** (wat er gezegd wordt) in, plus optioneel een **duur in seconden** — zoals een echt productiescript, en handig om snel een totale lengte te zien. Met **"+ Scène toevoegen"** voeg je er zoveel toe als je nodig hebt; elke scène heeft een ✕ om te verwijderen.
+
+Bij "Script" staat een vinkje **"Scène-structuur gebruiken"** — uitvinken geeft het oude, simpele ene-tekstvak terug (met sjablonen), voor als je gewoon snel iets wil noteren. Wisselen tussen beide behoudt je tekst (scènes worden bij het wisselen omgezet naar leesbare tekst en omgekeerd). Bestaande scripts van vóór deze update blijven gewoon werken als vrije tekst — niets is aangepast of verplicht gemigreerd.
+
+Klanten zien de scène-opbouw ook netjes uitgesplitst (Visueel/Tekst per scène + totale duur) in hun eigen portaal, i.p.v. een blok platte tekst.
+
 ## Fase 8 — Deadlines, Klanten/Retainers, Financiën-uitbreiding, Equipment, Content Planning (nieuw)
 
 Grote uitbreiding op basis van je lijst met gewenste tabs. In plaats van elk punt letterlijk als aparte tab te bouwen (dan wordt de balk bovenaan onwerkbaar), is dit slim gegroepeerd op wat er al bestond:

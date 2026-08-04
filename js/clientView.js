@@ -1,5 +1,5 @@
 import { state, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
-import { escapeHtml, escapeAttr } from './util.js';
+import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
 import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept } from './data.js';
 import { showToast } from './toast.js';
 
@@ -130,7 +130,7 @@ function conceptCardHtml(c, conceptFeedback) {
         <span class="badge-status ${c.status}">${CONCEPT_STATUS_LABELS[c.status] ?? c.status}</span>
       </div>
       <div class="concept-card-title">${escapeHtml(c.title)}</div>
-      ${c.content ? `<p class="concept-card-content">${escapeHtml(c.content)}</p>` : ''}
+      ${renderConceptContentHtml(c.content)}
       ${c.status !== 'goedgekeurd' ? `<button type="button" class="btn btn-red btn-small concept-approve-btn" data-id="${c.id}">Goedkeuren</button>` : ''}
       <div class="concept-feedback">
         ${conceptFeedback.length

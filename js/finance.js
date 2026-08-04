@@ -159,8 +159,21 @@ function nextDocumentNumber(existingRows, numberField) {
   return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 }
 
+async function blobToBase64(blob) {
+  const buf = await blob.arrayBuffer();
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
 async function handleDownloadPdf(kind, row) {
   try {
+    // Eigen geïmporteerd offerte-bestand heeft voorrang op de auto-gegenereerde PDF.
+    if (row.bestand_path) {
+      window.open(await getFinFactuurUrl(row.bestand_path), '_blank');
+      return;
+    }
     const doc = kind === 'factuur' ? generateFactuurPdf(row, FIN.settings) : generateOffertePdf(row, FIN.settings);
     const nummer = kind === 'factuur' ? row.factuurnummer : row.offertenummer;
     downloadPdf(doc, `${kind}-${nummer || row.id.slice(0, 8)}.pdf`);
@@ -176,16 +189,25 @@ async function handleEmailPdf(kind, row) {
   }
   if (!confirm(`Deze ${kind} versturen naar ${row.klant_email}?`)) return;
   try {
-    const doc = kind === 'factuur' ? generateFactuurPdf(row, FIN.settings) : generateOffertePdf(row, FIN.settings);
     const nummer = kind === 'factuur' ? row.factuurnummer : row.offertenummer;
-    const pdfBase64 = pdfToBase64(doc);
+    let base64, filename;
+    if (row.bestand_path) {
+      const url = await getFinFactuurUrl(row.bestand_path);
+      const blob = await (await fetch(url)).blob();
+      base64 = await blobToBase64(blob);
+      filename = row.bestand_naam || `${kind}-${nummer || row.id.slice(0, 8)}.pdf`;
+    } else {
+      const doc = kind === 'factuur' ? generateFactuurPdf(row, FIN.settings) : generateOffertePdf(row, FIN.settings);
+      base64 = pdfToBase64(doc);
+      filename = `${kind}-${nummer || row.id.slice(0, 8)}.pdf`;
+    }
     await sendDocumentEmail({
       to: row.klant_email,
       subject: `${kind === 'factuur' ? 'Factuur' : 'Offerte'}${nummer ? ' ' + nummer : ''} — ${FIN.settings.bedrijfsnaam || 'SoenensMedia'}`,
       kind,
       nummer,
-      pdfBase64,
-      filename: `${kind}-${nummer || row.id.slice(0, 8)}.pdf`,
+      pdfBase64: base64,
+      filename,
     });
     showToast('Verstuurd naar ' + row.klant_email);
   } catch (err) {
@@ -335,7 +357,7 @@ function renderFinOffertesTab(el) {
   const rows = [...FIN.offertes].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   el.innerHTML = `
     <div class="view-header"><h2>Offertes</h2><button type="button" class="btn btn-red btn-small" id="fin-add-offerte">+ Offerte toevoegen</button></div>
-    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.length ? `<table class="log-table"><thead><tr><th>Nr.</th><th>Klant</th><th>Omschrijving</th><th>Datum</th><th>Bedrag</th><th>Project</th><th>Status</th><th>Eigen bestand</th><th></th></tr></thead><tbody>
       ${rows.map((o) => {
         const project = o.project_id ? state.projects.find((p) => p.id === o.project_id) : null;
         return `<tr>
@@ -347,8 +369,14 @@ function renderFinOffertesTab(el) {
           <td>${project ? escapeHtml(project.title) : '<span class="hint-dim">—</span>'}</td>
           <td><span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${OFFERTE_STATUS_LABELS[o.status]}</span></td>
           <td>
-            <button type="button" class="btn-icon fin-pdf-offerte" data-id="${o.id}" title="Download PDF">📄</button>
+            ${o.bestand_path
+              ? `<a href="#" class="fin-view-offerte-file" data-id="${o.id}">📄 ${escapeHtml(o.bestand_naam || 'bekijken')}</a> <button type="button" class="btn-icon fin-remove-offerte-file" data-id="${o.id}">✕</button>`
+              : `<label class="fin-upload-label">⬆ Importeren<input type="file" class="fin-upload-offerte-input" data-id="${o.id}" accept="application/pdf,image/*,.doc,.docx" style="display:none;"></label>`}
+          </td>
+          <td>
+            <button type="button" class="btn-icon fin-pdf-offerte" data-id="${o.id}" title="Download">📄</button>
             <button type="button" class="btn-icon fin-email-offerte" data-id="${o.id}" title="Verstuur per e-mail">✉</button>
+            <button type="button" class="btn-icon fin-to-factuur" data-id="${o.id}" title="Omzetten naar factuur">🧾</button>
             <button type="button" class="btn-icon fin-edit-offerte" data-id="${o.id}">✎</button>
           </td>
         </tr>`;
@@ -364,6 +392,56 @@ function renderFinOffertesTab(el) {
   });
   el.querySelectorAll('.fin-email-offerte').forEach((btn) => {
     btn.addEventListener('click', () => handleEmailPdf('offerte', FIN.offertes.find((x) => x.id === btn.dataset.id)));
+  });
+  el.querySelectorAll('.fin-to-factuur').forEach((btn) => {
+    btn.addEventListener('click', () => convertOfferteToFactuur(FIN.offertes.find((x) => x.id === btn.dataset.id)));
+  });
+  el.querySelectorAll('.fin-upload-offerte-input').forEach((input) => {
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const offerte = FIN.offertes.find((x) => x.id === input.dataset.id);
+      try {
+        const path = await uploadFinFactuurFile(offerte.id, file);
+        const updated = await updateFinOfferte(offerte.id, { bestand_path: path, bestand_naam: file.name });
+        FIN.offertes[FIN.offertes.findIndex((x) => x.id === offerte.id)] = updated;
+        renderFinSubview();
+        showToast('Offerte-bestand geïmporteerd');
+      } catch (err) { showToast(err.message, true); }
+    });
+  });
+  el.querySelectorAll('.fin-view-offerte-file').forEach((a) => {
+    a.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const offerte = FIN.offertes.find((x) => x.id === a.dataset.id);
+      try {
+        window.open(await getFinFactuurUrl(offerte.bestand_path), '_blank');
+      } catch (err) { showToast(err.message, true); }
+    });
+  });
+  el.querySelectorAll('.fin-remove-offerte-file').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const offerte = FIN.offertes.find((x) => x.id === btn.dataset.id);
+      if (!confirm('Geïmporteerd offerte-bestand verwijderen?')) return;
+      try {
+        await deleteFinFactuurFile(offerte.bestand_path);
+        const updated = await updateFinOfferte(offerte.id, { bestand_path: null, bestand_naam: null });
+        FIN.offertes[FIN.offertes.findIndex((x) => x.id === offerte.id)] = updated;
+        renderFinSubview();
+      } catch (err) { showToast(err.message, true); }
+    });
+  });
+}
+
+function convertOfferteToFactuur(offerte) {
+  if (!confirm(`Offerte ${offerte.offertenummer || ''} omzetten naar een nieuwe factuur?`)) return;
+  openFactuurModal(null, {
+    klant: offerte.klant,
+    klant_email: offerte.klant_email,
+    omschrijving: offerte.omschrijving,
+    bedrag: offerte.bedrag,
+    project_id: offerte.project_id,
+    fromOfferteId: offerte.id,
   });
 }
 
@@ -480,8 +558,19 @@ function renderFinFacturenTab(el) {
   });
 }
 
-function openFactuurModal(existing) {
-  const f = existing || { klant: '', klant_email: '', omschrijving: '', datum: todayISO(), vervaldatum: todayISO(), bedrag: 0, btw: FIN.settings.default_btw, status: 'open' };
+function openFactuurModal(existing, prefill = null) {
+  const vervalDefault = new Date();
+  vervalDefault.setDate(vervalDefault.getDate() + (Number(FIN.settings.betalingstermijn_dagen) || 30));
+  const f = existing || {
+    klant: prefill?.klant || '',
+    klant_email: prefill?.klant_email || '',
+    omschrijving: prefill?.omschrijving || '',
+    datum: todayISO(),
+    vervaldatum: prefill ? vervalDefault.toISOString().slice(0, 10) : todayISO(),
+    bedrag: prefill?.bedrag ?? 0,
+    btw: FIN.settings.default_btw,
+    status: 'open',
+  };
   openModal(`
     <div class="modal-header"><h2>${existing ? 'Factuur bewerken' : 'Factuur toevoegen'}</h2></div>
     <form id="fin-factuur-form">
@@ -537,6 +626,7 @@ function openFactuurModal(existing) {
       btw: parseFloat(document.getElementById('ff-btw').value) || 0,
       status: document.getElementById('ff-status').value,
     };
+    if (!existing && prefill?.project_id) payload.project_id = prefill.project_id;
     try {
       if (existing) {
         const updated = await updateFinFactuur(existing.id, payload);
@@ -544,10 +634,17 @@ function openFactuurModal(existing) {
       } else {
         payload.factuurnummer = nextDocumentNumber(FIN.facturen, 'factuurnummer');
         FIN.facturen.unshift(await createFinFactuur(payload));
+        if (prefill?.fromOfferteId) {
+          const offerte = FIN.offertes.find((x) => x.id === prefill.fromOfferteId);
+          if (offerte && offerte.status !== 'geaccepteerd') {
+            const updatedOfferte = await updateFinOfferte(offerte.id, { status: 'geaccepteerd' });
+            FIN.offertes[FIN.offertes.findIndex((x) => x.id === offerte.id)] = updatedOfferte;
+          }
+        }
       }
       closeModal();
       renderFinSubview();
-      showToast('Factuur opgeslagen');
+      showToast(prefill?.fromOfferteId ? 'Factuur aangemaakt vanuit offerte' : 'Factuur opgeslagen');
     } catch (err) { showToast(err.message, true); }
   });
 }

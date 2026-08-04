@@ -232,28 +232,6 @@ Bij "Script" staat een vinkje **"Scène-structuur gebruiken"** — uitvinken gee
 
 Klanten zien de scène-opbouw ook netjes uitgesplitst (Visueel/Tekst per scène + totale duur) in hun eigen portaal, i.p.v. een blok platte tekst.
 
-## Fase 9 — Offerte/factuur-PDF's genereren en versturen (nieuw)
-
-Het portaal maakt nu zelf de PDF van een offerte of factuur — geen los Word/Excel-sjabloon meer nodig. Bij elke rij in **Financiën → Offertes** en **Financiën → Facturen** staan 2 nieuwe knoppen naast bewerken (✎):
-- **📄 Download PDF** — genereert de PDF meteen en downloadt hem naar je computer.
-- **✉ Verstuur per e-mail** — genereert dezelfde PDF en verstuurt hem als bijlage naar het e-mailadres van de klant (moet je invullen bij het bewerken van die offerte/factuur).
-
-Elke nieuwe offerte/factuur krijgt automatisch een **volgnummer** (bv. `2026-001`, `2026-002`, ...) zodra je hem aanmaakt — verplicht voor een geldige factuur in België, en je hoeft er zelf niets voor te doen.
-
-### Eenmalig instellen
-
-1. Voer [`sql/014_offerte_factuur_documenten.sql`](sql/014_offerte_factuur_documenten.sql) uit in de SQL Editor.
-2. Ga naar **Financiën → Instellingen → "Bedrijfsgegevens (voor offerte/factuur-PDF's)"** en vul in: bedrijfsnaam, adres, ondernemingsnummer, IBAN, betalingstermijn. Dit komt op elke PDF te staan.
-3. **Alleen nodig voor "Verstuur per e-mail"** (downloaden werkt al zonder dit): deploy de nieuwe Edge Function.
-   - Supabase Dashboard → **Edge Functions** → nieuwe functie **`send-document-email`** → plak de volledige inhoud van [`supabase/functions/send-document-email/index.ts`](supabase/functions/send-document-email/index.ts) → **Deploy**.
-   - Geen nieuwe secret nodig — hergebruikt dezelfde `BREVO_API_KEY` die je al had ingesteld bij de statuswijziging-e-mail (Fase 5). Als je die nog niet had, zie de Fase 5-instructies hierboven.
-
-### Gebruik
-
-1. Maak een offerte of factuur aan zoals gewoonlijk, en vul het **e-mailadres van de klant** in als je hem per mail wil kunnen versturen.
-2. Klik op 📄 om de PDF te downloaden, of op ✉ om hem meteen naar de klant te mailen.
-3. Downloaden werkt altijd; versturen per e-mail vraagt stap 3 hierboven (de Edge Function).
-
 ## Fase 8 — Deadlines, Klanten/Retainers, Financiën-uitbreiding, Equipment, Content Planning (nieuw)
 
 Grote uitbreiding op basis van je lijst met gewenste tabs. In plaats van elk punt letterlijk als aparte tab te bouwen (dan wordt de balk bovenaan onwerkbaar), is dit slim gegroepeerd op wat er al bestond:
@@ -304,3 +282,29 @@ Planning voor je eigen SoenensMedia-content (BTS, reels, testimonials, tips, aft
 2. Klanten aanmaken in de nieuwe Klanten-tab en bestaande opdrachten er evt. aan koppelen (niet automatisch gebeurd — de oude vrije klantnaam-tekst kon niet betrouwbaar automatisch gekoppeld worden).
 3. Content-postfrequentie-doelen instellen.
 4. Omzetdoel per maand instellen bij Financiën → Instellingen (anders toont die KPI-kaart gewoon "geen doel ingesteld").
+
+## Fase 9 — Offerte/factuur-PDF's genereren, versturen, importeren & omzetten (nieuw)
+
+Het portaal maakt nu zelf de PDF van een offerte of factuur — geen los Word/Excel-sjabloon meer nodig. Bij elke rij in **Financiën → Offertes** en **Financiën → Facturen** staan knoppen naast bewerken (✎):
+- **📄 Download** — genereert de PDF meteen en downloadt hem naar je computer.
+- **✉ Verstuur per e-mail** — verstuurt hem als bijlage naar het e-mailadres van de klant (moet je invullen bij het bewerken van die offerte/factuur).
+- **🧾 Omzetten naar factuur** (enkel bij Offertes) — maakt meteen een nieuwe factuur aan met klant, omschrijving en bedrag van die offerte al ingevuld (vervaldatum = vandaag + je betalingstermijn), en zet de offerte automatisch op "Geaccepteerd". Handig voor rechtstreekse klanten waar jij zelf de offerte/factuur opstelt — dus **niet** nodig voor werk via Creative Shelter, die hebben hun eigen facturatie.
+
+Elke nieuwe offerte/factuur krijgt automatisch een **volgnummer** (bv. `2026-001`, `2026-002`, ...) — verplicht voor een geldige factuur in België, je hoeft er zelf niets voor te doen.
+
+### Eigen offerte importeren
+
+Bij Offertes staat een kolom **"Eigen bestand"**: klik op **"⬆ Importeren"** om je eigen offerte (PDF, Word, afbeelding — bv. eentje die je zelf mooier hebt opgemaakt) te uploaden bij die offerte. Zodra dat bestand er staat, gebruiken **📄 Download** en **✉ Verstuur** automatisch dát bestand in plaats van de auto-gegenereerde PDF — je eigen versie heeft dus altijd voorrang. Verwijderen kan met het ✕-knopje ernaast, waarna het weer terugvalt op de auto-gegenereerde PDF.
+
+### Eenmalig instellen
+
+1. Voer [`sql/014_offerte_factuur_documenten.sql`](sql/014_offerte_factuur_documenten.sql) en [`sql/015_offerte_import_conversie.sql`](sql/015_offerte_import_conversie.sql) uit in de SQL Editor.
+2. Ga naar **Financiën → Instellingen → "Bedrijfsgegevens (voor offerte/factuur-PDF's)"** en vul in: bedrijfsnaam, adres, ondernemingsnummer, IBAN, betalingstermijn. Dit komt op elke auto-gegenereerde PDF te staan (niet nodig als je enkel eigen geïmporteerde bestanden gebruikt).
+3. **Alleen nodig voor "Verstuur per e-mail"** (downloaden werkt al zonder dit): deploy de Edge Function.
+   - Supabase Dashboard → **Edge Functions** → nieuwe functie **`send-document-email`** → plak de volledige inhoud van [`supabase/functions/send-document-email/index.ts`](supabase/functions/send-document-email/index.ts) → **Deploy**.
+   - Geen nieuwe secret nodig — hergebruikt dezelfde `BREVO_API_KEY` die je al had ingesteld bij de statuswijziging-e-mail (Fase 5).
+
+### Gebruik
+
+1. Maak een offerte of factuur aan zoals gewoonlijk, en vul het **e-mailadres van de klant** in als je hem per mail wil kunnen versturen. Optioneel: importeer je eigen bestand i.p.v. de auto-gegenereerde PDF te gebruiken.
+2. Klant akkoord? Klik bij die offerte op **🧾** om ze in 1 klik om te zetten naar een factuur — pas eventueel het BTW-percentage nog aan (offertes houden geen BTW bij, facturen wel) en sla op.

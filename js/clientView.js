@@ -59,10 +59,20 @@ export async function renderClientView() {
   }
 }
 
+function firstNameOf(profile) {
+  if (profile?.full_name?.trim()) return profile.full_name.trim().split(/\s+/)[0];
+  if (profile?.email) {
+    const local = profile.email.split('@')[0];
+    const first = local.split(/[._-]+/)[0];
+    return first ? first.charAt(0).toUpperCase() + first.slice(1) : '';
+  }
+  return '';
+}
+
 function renderClientList() {
   state.activeClientProjectId = null;
   const container = document.getElementById('client-projects-container');
-  const name = state.profile?.full_name || state.profile?.email || '';
+  const name = firstNameOf(state.profile);
   const count = state.clientProjects.length;
 
   container.innerHTML = `

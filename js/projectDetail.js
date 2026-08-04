@@ -68,6 +68,15 @@ export function openProjectDetail(id) {
     </div>
 
     <div class="detail-section">
+      <h3>Overeenkomst (optioneel)</h3>
+      <div class="empty-note">Leeg = geen overeenkomst nodig, klant ziet meteen de rest van het project. Ingevuld = klant moet eerst tekenen voor die verder mag.</div>
+      <div class="field"><label>Tekst van de overeenkomst</label><textarea id="pd-agreement" rows="6" placeholder="Voorwaarden, prijsafspraak, gebruiksrechten, ...">${escapeHtml(p.agreement_content ?? '')}</textarea></div>
+      ${p.agreement_signed_at
+        ? `<div class="empty-note">Getekend door <strong>${escapeHtml(p.agreement_signed_name ?? '')}</strong> op ${fmtDate(new Date(p.agreement_signed_at))}. <button type="button" class="btn-icon" id="pd-reset-agreement" title="Handtekening wissen (bv. na wijziging voorwaarden)">✕</button></div>`
+        : '<div class="empty-note">Nog niet ondertekend.</div>'}
+    </div>
+
+    <div class="detail-section">
       <h3>Foto's</h3>
       <div class="field-row">
         <input type="file" id="pd-photo-input" accept="image/*" multiple>
@@ -149,6 +158,7 @@ export function openProjectDetail(id) {
       client_id: document.getElementById('pd-client-id').value || null,
       archived: document.getElementById('pd-archived').checked,
       storage_location: document.getElementById('pd-storage-location').value.trim() || null,
+      agreement_content: document.getElementById('pd-agreement').value.trim() || null,
     };
     const statusChanged = payload.status !== p.status;
     try {
@@ -191,6 +201,20 @@ export function openProjectDetail(id) {
     state.activeScriptingProjectId = id;
     closeModal();
     document.querySelector('.tab-btn[data-view="scripting"]').click();
+  });
+
+  document.getElementById('pd-reset-agreement')?.addEventListener('click', async () => {
+    if (!confirm('Handtekening wissen? De klant moet dan opnieuw tekenen voor die verder mag.')) return;
+    try {
+      const updated = await updateProject(id, { agreement_signed_at: null, agreement_signed_name: null });
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      closeModal();
+      openProjectDetail(id);
+      showToast('Handtekening gewist');
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 }
 

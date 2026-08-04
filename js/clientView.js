@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement } from './data.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -13,6 +13,18 @@ export async function renderClientView() {
   } catch (err) {
     container.innerHTML = `<div class="empty-note">Kon projecten niet laden: ${escapeHtml(err.message)}</div>`;
     return;
+  }
+
+  try {
+    const [welcome, delivery] = await Promise.all([
+      fetchPortalContent('welcome_guide'),
+      fetchPortalContent('delivery_guide'),
+    ]);
+    state.portalWelcomeGuide = welcome?.content ?? '';
+    state.portalDeliveryGuide = delivery?.content ?? '';
+  } catch {
+    state.portalWelcomeGuide = '';
+    state.portalDeliveryGuide = '';
   }
 
   state.clientProjects = projects;
@@ -89,11 +101,24 @@ function renderClientProjectDetail(projectId) {
     renderClientList();
     return;
   }
+
+  const container = document.getElementById('client-projects-container');
+  const needsSigning = p.agreement_content && !p.agreement_signed_at;
+
+  if (needsSigning) {
+    container.innerHTML = `
+      <button type="button" class="btn btn-ghost btn-small client-back-btn" id="client-back-btn">‹ Terug naar projecten</button>
+      ${agreementGateHtml(p)}
+    `;
+    document.getElementById('client-back-btn').addEventListener('click', renderClientList);
+    wireAgreementForm(p);
+    return;
+  }
+
   const feedback = state.clientFeedbackByProject[p.id] || [];
   const photos = state.clientPhotosByProject[p.id] || [];
   const concepts = state.clientConceptsByProject[p.id] || [];
 
-  const container = document.getElementById('client-projects-container');
   container.innerHTML = `
     <button type="button" class="btn btn-ghost btn-small client-back-btn" id="client-back-btn">‹ Terug naar projecten</button>
     ${projectDetailHtml(p, feedback, photos, concepts)}
@@ -102,6 +127,50 @@ function renderClientProjectDetail(projectId) {
   document.getElementById('client-back-btn').addEventListener('click', renderClientList);
   wireProjectDetailEvents(p, photos, feedback, concepts);
   applyMosaicLayout(container);
+}
+
+function agreementGateHtml(p) {
+  return `
+    <div class="client-project-card">
+      <div class="client-hero"><div class="client-hero-placeholder">SM</div></div>
+      ${state.portalWelcomeGuide ? `
+        <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Welkom</h3>
+          <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
+        </div>` : ''}
+      <div class="client-project-header">
+        <div><div class="title">${escapeHtml(p.title)}</div></div>
+      </div>
+      <div class="detail-section">
+        <h3>Overeenkomst</h3>
+        <p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>
+        <form id="agreement-form-${p.id}">
+          <div class="field"><label>Volledige naam</label><input type="text" id="agreement-name-${p.id}" required placeholder="Je naam"></div>
+          <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+            <input type="checkbox" id="agreement-agree-${p.id}" style="width:auto;" required>
+            Ik ga akkoord met bovenstaande overeenkomst
+          </label>
+          <button type="submit" class="btn btn-red">Ondertekenen</button>
+        </form>
+      </div>
+    </div>`;
+}
+
+function wireAgreementForm(p) {
+  const form = document.getElementById(`agreement-form-${p.id}`);
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById(`agreement-name-${p.id}`).value.trim();
+    if (!name) return;
+    try {
+      await signAgreement(p.id, name);
+      state.clientProjects = await fetchProjects();
+      showToast('Overeenkomst ondertekend');
+      renderClientProjectDetail(p.id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
 }
 
 // Elke 5de foto krijgt een groter formaat, gebaseerd op de echte afmetingen
@@ -169,6 +238,12 @@ function projectDetailHtml(p, feedback, photos, concepts) {
         ${!cover ? '<div class="client-hero-placeholder">SM</div>' : ''}
       </div>
 
+      ${state.portalWelcomeGuide ? `
+        <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Welkom</h3>
+          <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
+        </div>` : ''}
+
       <div class="client-project-header">
         <div>
           <div class="title">${escapeHtml(p.title)}</div>
@@ -179,6 +254,10 @@ function projectDetailHtml(p, feedback, photos, concepts) {
           : `<button class="btn btn-red btn-small" id="approve-btn-${p.id}">Goedkeuren</button>`}
       </div>
 
+      ${p.agreement_content && p.agreement_signed_at
+        ? `<div class="empty-note">Overeenkomst ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.</div>`
+        : ''}
+
       ${statusStepperHtml(p.status)}
 
       <div class="client-meta-row">
@@ -187,6 +266,7 @@ function projectDetailHtml(p, feedback, photos, concepts) {
       </div>
 
       <div class="detail-section">
+        <h3>Project brief</h3>
         ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : '<div class="client-empty-state">✍️ De briefing komt hier binnenkort te staan.</div>'}
         ${p.deliverables
           ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>`
@@ -223,6 +303,12 @@ function projectDetailHtml(p, feedback, photos, concepts) {
                </div>`
             : `<div class="frame-embed-wrapper"><iframe src="${escapeAttr(p.frame_io_url)}" allow="fullscreen" loading="lazy"></iframe></div>
                <a class="btn btn-ghost btn-small" href="${escapeAttr(p.frame_io_url)}" target="_blank" rel="noopener">Open in Frame.io</a>`}
+        </div>` : ''}
+
+      ${state.portalDeliveryGuide ? `
+        <div class="detail-section">
+          <h3>Delivery-gids</h3>
+          <p class="client-brief-text">${escapeHtml(state.portalDeliveryGuide)}</p>
         </div>` : ''}
 
       <div class="detail-section">

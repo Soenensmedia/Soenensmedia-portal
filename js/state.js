@@ -44,6 +44,8 @@ export const state = {
   clientFeedbackByProject: {},
   clientPhotosByProject: {},
   clientConceptsByProject: {},
+  portalWelcomeGuide: '',
+  portalDeliveryGuide: '',
 };
 
 export function startOfWeek(date) {

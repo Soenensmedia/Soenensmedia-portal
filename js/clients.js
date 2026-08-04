@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { fetchClients, createClient, updateClient, deleteClient } from './data.js';
+import { fetchClients, createClient, updateClient, deleteClient, fetchPortalContent, savePortalContent } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
@@ -59,6 +59,54 @@ function renderList() {
       const client = state.clients.find((c) => c.id === row.dataset.id);
       if (client) openClientForm(client);
     });
+  });
+}
+
+export async function openPortalContentEditor() {
+  openModal('<div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div><div class="empty-note">Laden...</div>');
+  let welcome, delivery;
+  try {
+    [welcome, delivery] = await Promise.all([
+      fetchPortalContent('welcome_guide'),
+      fetchPortalContent('delivery_guide'),
+    ]);
+  } catch (err) {
+    openModal(`<div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div><div class="empty-note">Kon niet laden: ${escapeHtml(err.message)}</div>`);
+    return;
+  }
+  openModal(`
+    <div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div>
+    <form id="portal-content-form">
+      <div class="field">
+        <label>Welkomstgids (klant ziet dit bovenaan elk project)</label>
+        <textarea id="pc-welcome" rows="6" placeholder="Welkom bij SoenensMedia! Hier volgt hoe het proces verloopt...">${escapeHtml(welcome?.content ?? '')}</textarea>
+      </div>
+      <div class="field">
+        <label>Delivery-gids (klant ziet dit bij de opgeleverde bestanden)</label>
+        <textarea id="pc-delivery" rows="6" placeholder="Je bestanden staan klaar! Zo download en gebruik je ze...">${escapeHtml(delivery?.content ?? '')}</textarea>
+      </div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="pc-cancel">Sluiten</button>
+          <button type="submit" class="btn btn-red">Opslaan</button>
+        </div>
+      </div>
+    </form>
+  `);
+  document.getElementById('pc-cancel').addEventListener('click', closeModal);
+  document.getElementById('portal-content-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await Promise.all([
+        savePortalContent('welcome_guide', document.getElementById('pc-welcome').value.trim() || null),
+        savePortalContent('delivery_guide', document.getElementById('pc-delivery').value.trim() || null),
+      ]);
+      closeModal();
+      showToast('Opgeslagen');
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 }
 

@@ -97,6 +97,19 @@ export const sendDocumentEmail = (payload) =>
     return data;
   });
 
+// ── klant-journey: welkomstgids, overeenkomst, delivery-gids ──
+export const fetchPortalContent = async (key) => {
+  const { data, error } = await sb.from('portal_content').select('*').eq('content_key', key).maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const savePortalContent = (key, content) =>
+  sb.from('portal_content').upsert({ content_key: key, content }, { onConflict: 'content_key' }).select().single().then(unwrap);
+
+export const signAgreement = (projectId, signedName) =>
+  sb.rpc('sign_agreement', { p_project_id: projectId, p_signed_name: signedName }).then(unwrap);
+
 // ── fotogalerij ─────────────────────────────────────────
 const PHOTOS_BUCKET = 'project-photos';
 const SIGNED_URL_TTL = 4 * 60 * 60; // 4 uur

@@ -4,7 +4,7 @@ import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchCli
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
-import { renderClients, openClientForm } from './clients.js';
+import { renderClients, openClientForm, openPortalContentEditor } from './clients.js';
 import { renderFinance } from './finance.js';
 import { renderScripting, openConceptForm, importScriptFile } from './scripting.js';
 import { renderDeadlines } from './deadlines.js';
@@ -47,6 +47,7 @@ document.getElementById('scripting-import-input').addEventListener('change', (e)
   e.target.value = '';
 });
 document.getElementById('new-client-btn').addEventListener('click', () => openClientForm());
+document.getElementById('portal-content-btn').addEventListener('click', () => openPortalContentEditor());
 document.getElementById('new-equipment-btn').addEventListener('click', () => openEquipmentForm());
 document.getElementById('prev-week-btn').addEventListener('click', () => shiftWeek(-1));
 document.getElementById('next-week-btn').addEventListener('click', () => shiftWeek(1));

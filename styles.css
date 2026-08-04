@@ -410,7 +410,7 @@ table.log-table tr:last-child td { border-bottom: none; }
 .section-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .section-header-row h3 { margin-bottom: 0; }
 
-.client-brief-text { font-size: 13.5px; color: var(--text); line-height: 1.5; }
+.client-brief-text { font-size: 13.5px; color: var(--text); line-height: 1.5; white-space: pre-line; }
 .deliverables-box { margin-top: 12px; background: var(--paneld); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
 .deliverables-box h3 { margin-bottom: 6px; }
 .deliverables-box p { font-size: 13px; color: var(--text-dim); white-space: pre-line; }

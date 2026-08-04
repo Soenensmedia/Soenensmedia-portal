@@ -319,3 +319,22 @@ De klant-detailpagina oogde kaal bij een project met weinig foto's/scripts. Toeg
 - **Nette lege-staat-kaartjes** i.p.v. secties die gewoon verdwijnen: "Briefing komt hier binnenkort", "Nog geen ideeën/scripts", "Nog geen foto's" — de pagina behoudt zo altijd dezelfde volledige structuur, ook vroeg in een project.
 
 Geen SQL of instellingen nodig — dit is puur visueel, meteen zichtbaar na herladen.
+
+## Fase 11 — Klant-journey: welkomstgids, overeenkomst met ondertekenen, project brief, delivery-gids (nieuw)
+
+De klantpagina volgt nu een vaste volgorde: **Welkomstgids → Overeenkomst (indien nodig, met verplicht ondertekenen) → Project brief → Delivery-gids**.
+
+- **Welkomstgids**: één algemene tekst (niet per klant), bovenaan elk project. Bewerk je bij **Klanten → "Welkomstgids & delivery-gids"**.
+- **Overeenkomst**: per opdracht optioneel in te vullen bij het opdracht-detailvenster ("Overeenkomst"-sectie). Zolang die niet ondertekend is, ziet de klant **enkel** de welkomstgids + de overeenkomst + een teken-formulier (naam intypen + akkoord-vinkje) — de rest van het project (foto's, scripts, feedback, ...) blijft verborgen tot getekend. Leeg laten = geen overeenkomst nodig, klant ziet meteen alles.
+- **Project brief**: dit is de bestaande "Briefing"-tekst, nu duidelijk gelabeld als "Project brief" in de klant-weergave.
+- **Delivery-gids**: zelfde principe als de welkomstgids (één algemene tekst, zelfde plek om te bewerken), getoond onderaan elk project, vlak voor Feedback.
+
+### Eenmalig instellen
+
+Voer [`sql/016_client_journey.sql`](sql/016_client_journey.sql) uit in de SQL Editor.
+
+### Gebruik
+
+1. Ga naar **Klanten → "Welkomstgids & delivery-gids"** en schrijf beide teksten (bv. hoe het proces verloopt, hoe ze bestanden downloaden).
+2. Wil je dat een klant eerst een overeenkomst moet tekenen? Vul de **"Overeenkomst"**-sectie in bij dat specifieke opdracht-detailvenster. Leeg = geen gate.
+3. Na ondertekenen zie je in het opdrachtvenster wie tekende en wanneer, met een knopje om de handtekening te wissen (bv. na een wijziging in de voorwaarden, zodat de klant opnieuw moet tekenen).

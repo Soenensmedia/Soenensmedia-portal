@@ -189,6 +189,14 @@ export const fetchFinSettings = async () => {
 export const saveFinSettings = (payload) =>
   sb.from('fin_settings').upsert(payload, { onConflict: 'user_id' }).select().single().then(unwrap);
 
+// Voor de klant-kant: er is maar 1 (admin-)bedrijfsinstellingen-rij, en de
+// klant heeft geen eigen user_id daarin — dus geen .eq('user_id', ...) filter.
+export const fetchAnyFinSettings = async () => {
+  const { data, error } = await sb.from('fin_settings').select('*').limit(1).maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
 export const fetchBtwSetAside = async (periodKey) => {
   const { data, error } = await sb.from('fin_btw_set_aside').select('*').eq('period_key', periodKey).maybeSingle();
   if (error) throw error;

@@ -351,3 +351,20 @@ Voer [`sql/017_client_self_service.sql`](sql/017_client_self_service.sql) uit in
 ### Beveiliging
 
 De klant kan enkel de **eigen** naam wijzigen (via een RPC die enkel `full_name` aanraakt, niet de rol) en enkel de **eigen gekoppelde** klantenrij lezen (via de projectkoppeling) — nooit die van andere klanten.
+
+## Fase 13 — Klantportaal overzichtelijker: offertes/facturen, contact, groepering, status-uitleg (nieuw)
+
+- **Offertes & Facturen bij het project**: de klant ziet nu, per project, de eigen gekoppelde offerte(s) en factuur/facturen (nummer, bedrag incl. btw, status) met een **Download**-knop — zelfde PDF/bestand als jij gebruikt.
+- **Contactkaart**: onderaan de projectenlijst staat nu een "Vragen?"-kaartje met je contact e-mail/telefoon (enkel zichtbaar als je die hieronder invult).
+- **Projecten gegroepeerd**: de projectenlijst splitst nu in **Actief** en **Afgerond** zodra er van beide zijn — bij enkel actieve (of enkel afgeronde) projecten blijft het gewoon 1 ononderbroken lijst.
+- **"Wat nu?"-uitleg per status**: onder de statusbalk in elk project staat nu een korte zin die uitlegt wat de huidige status voor de klant betekent (bv. bij "Wacht op feedback": *"Er staat iets klaar hierboven — we wachten op jouw feedback of goedkeuring."*).
+
+### Eenmalig instellen
+
+Voer [`sql/018_client_facturen_offertes.sql`](sql/018_client_facturen_offertes.sql) en [`sql/019_contact_info.sql`](sql/019_contact_info.sql) uit in de SQL Editor.
+
+Vul daarna je contactgegevens in bij **Financiën → Instellingen → Bedrijfsgegevens** (Contact e-mail / Contact telefoon) — zonder dit blijft de contactkaart gewoon verborgen.
+
+### Beveiliging
+
+De klant ziet enkel offertes/facturen die via het project aan zijn eigen account gekoppeld zijn (RLS-check op `project.client_user_id = auth.uid()`) — nooit die van een ander project/klant.

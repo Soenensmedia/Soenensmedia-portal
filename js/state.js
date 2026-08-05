@@ -47,6 +47,9 @@ export const state = {
   portalWelcomeGuide: '',
   portalDeliveryGuide: '',
   clientOwnRecords: [],
+  clientFacturen: [],
+  clientOffertes: [],
+  clientFinSettings: {},
 };
 
 export function startOfWeek(date) {

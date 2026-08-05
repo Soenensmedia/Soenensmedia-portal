@@ -409,6 +409,24 @@ table.log-table tr:last-child td { border-bottom: none; }
 .tile-title { font-size: 14px; color: #fff; font-weight: 500; }
 .tile-status { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
+.client-group-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint);
+  margin: 22px 0 10px;
+}
+.client-group-label:first-of-type { margin-top: 0; }
+
+.client-contact-card {
+  margin-top: 28px; background: var(--paneld); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 16px; text-align: center;
+}
+.client-contact-title { font-size: 12.5px; color: var(--text-dim); margin-bottom: 4px; }
+.client-contact-sub { font-size: 13px; color: var(--text); }
+.client-contact-sub a { color: var(--red); }
+
+.client-status-hint {
+  font-size: 12.5px; color: var(--text-dim); text-align: center; margin: 2px 0 8px;
+}
+
 .client-back-btn { margin-bottom: 16px; }
 
 .section-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }

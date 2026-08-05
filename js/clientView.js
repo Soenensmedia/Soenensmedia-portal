@@ -1,7 +1,8 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
+import { generateFactuurPdf, generateOffertePdf, downloadPdf } from './pdf.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -32,6 +33,19 @@ export async function renderClientView() {
     state.clientOwnRecords = await fetchClients();
   } catch {
     state.clientOwnRecords = [];
+  }
+
+  try {
+    const [facturen, offertes, settings] = await Promise.all([
+      fetchFinFacturen(), fetchFinOffertes(), fetchAnyFinSettings(),
+    ]);
+    state.clientFacturen = facturen;
+    state.clientOffertes = offertes;
+    state.clientFinSettings = settings || {};
+  } catch {
+    state.clientFacturen = [];
+    state.clientOffertes = [];
+    state.clientFinSettings = {};
   }
 
   state.clientProjects = projects;
@@ -76,11 +90,30 @@ function firstNameOf(profile) {
   return '';
 }
 
+const CLIENT_DONE_STATUSES = ['verzonden', 'afgerond'];
+
+function contactCardHtml() {
+  const email = state.clientFinSettings?.contact_email;
+  const tel = state.clientFinSettings?.contact_telefoon;
+  if (!email && !tel) return '';
+  return `
+    <div class="client-contact-card">
+      <div class="client-contact-title">Vragen?</div>
+      <div class="client-contact-sub">
+        ${email ? `<a href="mailto:${escapeAttr(email)}">${escapeHtml(email)}</a>` : ''}
+        ${email && tel ? ' · ' : ''}
+        ${tel ? escapeHtml(tel) : ''}
+      </div>
+    </div>`;
+}
+
 function renderClientList() {
   state.activeClientProjectId = null;
   const container = document.getElementById('client-projects-container');
   const name = firstNameOf(state.profile);
   const count = state.clientProjects.length;
+  const active = state.clientProjects.filter((p) => !CLIENT_DONE_STATUSES.includes(p.status));
+  const done = state.clientProjects.filter((p) => CLIENT_DONE_STATUSES.includes(p.status));
 
   container.innerHTML = `
     <div class="client-welcome">
@@ -88,9 +121,14 @@ function renderClientList() {
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
       ${state.portalWelcomeGuide ? `<p class="client-welcome-guide">${escapeHtml(state.portalWelcomeGuide)}</p>` : ''}
     </div>
-    <div class="client-project-tiles">
-      ${state.clientProjects.map(tileHtml).join('')}
-    </div>`;
+    ${active.length ? `
+      ${done.length ? '<div class="client-group-label">Actief</div>' : ''}
+      <div class="client-project-tiles">${active.map(tileHtml).join('')}</div>` : ''}
+    ${done.length ? `
+      <div class="client-group-label">Afgerond</div>
+      <div class="client-project-tiles">${done.map(tileHtml).join('')}</div>` : ''}
+    ${contactCardHtml()}
+  `;
 
   container.querySelectorAll('.client-project-tile').forEach((el) => {
     el.addEventListener('click', () => renderClientProjectDetail(el.dataset.id));
@@ -283,6 +321,22 @@ function statusStepperHtml(status) {
     </div>`;
 }
 
+const STATUS_CLIENT_HINTS = {
+  nieuw: 'We plannen dit project in. Binnenkort volgt de shoot.',
+  shooting: 'De opnames staan gepland of zijn bezig.',
+  editing: 'We zijn volop aan het monteren.',
+  wacht_op_feedback: 'Er staat iets klaar hierboven — we wachten op jouw feedback of goedkeuring.',
+  revisie: 'We verwerken je feedback en passen het aan.',
+  klaar_om_te_versturen: 'Bijna klaar — de laatste check voor levering.',
+  verzonden: 'Alles is geleverd! Bekijk hieronder je bestanden.',
+  afgerond: 'Dit project is volledig afgerond. Bedankt voor je vertrouwen!',
+};
+
+function statusHintHtml(status) {
+  const hint = STATUS_CLIENT_HINTS[status];
+  return hint ? `<div class="client-status-hint">${escapeHtml(hint)}</div>` : '';
+}
+
 function retainerHtml(p) {
   const record = p.client_id ? state.clientOwnRecords.find((c) => c.id === p.client_id) : null;
   if (!record?.is_retainer) return '';
@@ -296,6 +350,49 @@ function retainerHtml(p) {
         ${record.retainer_verlengdatum ? `<div class="client-meta-item"><span class="client-meta-label">Verlengdatum</span><span>${fmtDate(new Date(record.retainer_verlengdatum))}</span></div>` : ''}
       </div>
     </div>`;
+}
+
+const CLIENT_FACTUUR_STATUS_LABELS = { open: 'Open', betaald: 'Betaald' };
+const CLIENT_OFFERTE_STATUS_LABELS = { verstuurd: 'Verstuurd', geaccepteerd: 'Geaccepteerd', geweigerd: 'Geweigerd' };
+const clientEur = (n) => '€ ' + (Math.round((n || 0) * 100) / 100).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function financeHtml(p) {
+  const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
+  const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
+  if (!facturen.length && !offertes.length) return '';
+  return `
+    <div class="detail-section">
+      <h3>Offertes & Facturen</h3>
+      ${offertes.map((o) => `
+        <div class="detail-list-item">
+          <span>Offerte ${escapeHtml(o.offertenummer || '')} — ${clientEur(o.bedrag)} <span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${CLIENT_OFFERTE_STATUS_LABELS[o.status] ?? o.status}</span></span>
+          <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="offerte" data-id="${o.id}">Download</button>
+        </div>`).join('')}
+      ${facturen.map((f) => {
+        const incl = Number(f.bedrag) * (1 + Number(f.btw) / 100);
+        return `
+        <div class="detail-list-item">
+          <span>Factuur ${escapeHtml(f.factuurnummer || '')} — ${clientEur(incl)} <span class="badge-status ${f.status}">${CLIENT_FACTUUR_STATUS_LABELS[f.status] ?? f.status}</span></span>
+          <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="factuur" data-id="${f.id}">Download</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function handleClientDownload(kind, id) {
+  const row = kind === 'factuur' ? state.clientFacturen.find((f) => f.id === id) : state.clientOffertes.find((o) => o.id === id);
+  if (!row) return;
+  try {
+    if (row.bestand_path) {
+      window.open(await getFinFactuurUrl(row.bestand_path), '_blank');
+      return;
+    }
+    const doc = kind === 'factuur' ? generateFactuurPdf(row, state.clientFinSettings) : generateOffertePdf(row, state.clientFinSettings);
+    const nummer = kind === 'factuur' ? row.factuurnummer : row.offertenummer;
+    downloadPdf(doc, `${kind}-${nummer || row.id.slice(0, 8)}.pdf`);
+  } catch (err) {
+    showToast('Kon niet downloaden: ' + err.message, true);
+  }
 }
 
 function projectDetailHtml(p, feedback, photos, concepts) {
@@ -327,6 +424,7 @@ function projectDetailHtml(p, feedback, photos, concepts) {
         : ''}
 
       ${statusStepperHtml(p.status)}
+      ${statusHintHtml(p.status)}
 
       <div class="client-meta-row">
         ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
@@ -381,6 +479,8 @@ function projectDetailHtml(p, feedback, photos, concepts) {
           <p class="client-brief-text">${escapeHtml(state.portalDeliveryGuide)}</p>
         </div>` : ''}
 
+      ${financeHtml(p)}
+
       <div class="detail-section">
         <h3>Feedback</h3>
         ${(() => {
@@ -398,6 +498,10 @@ function projectDetailHtml(p, feedback, photos, concepts) {
 }
 
 function wireProjectDetailEvents(p, photos, feedback, concepts) {
+  document.querySelectorAll('.client-download-doc').forEach((btn) => {
+    btn.addEventListener('click', () => handleClientDownload(btn.dataset.kind, btn.dataset.id));
+  });
+
   const form = document.getElementById(`fb-form-${p.id}`);
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -1025,6 +1025,10 @@ function renderFinInstellingenTab(el) {
         <div class="field"><label>IBAN</label><input type="text" id="fs-iban" value="${escapeAttr(s.iban ?? '')}" placeholder="BE00 0000 0000 0000"></div>
       </div>
       <div class="field"><label>Betalingstermijn (dagen)</label><input type="number" step="1" id="fs-betalingstermijn" value="${s.betalingstermijn_dagen ?? 30}"></div>
+      <div class="field-row">
+        <div class="field"><label>Contact e-mail (klanten zien dit)</label><input type="email" id="fs-contact-email" value="${escapeAttr(s.contact_email ?? '')}" placeholder="info@soenensmedia.be"></div>
+        <div class="field"><label>Contact telefoon (klanten zien dit)</label><input type="text" id="fs-contact-telefoon" value="${escapeAttr(s.contact_telefoon ?? '')}" placeholder="0470 25 67 85"></div>
+      </div>
       <button type="button" class="btn btn-red btn-small" id="fs-save-bedrijf">Opslaan</button>
     </div>
     <div class="detail-section">
@@ -1059,6 +1063,8 @@ function renderFinInstellingenTab(el) {
       ondernemingsnummer: document.getElementById('fs-ondernemingsnummer').value.trim() || null,
       iban: document.getElementById('fs-iban').value.trim() || null,
       betalingstermijn_dagen: parseInt(document.getElementById('fs-betalingstermijn').value, 10) || 30,
+      contact_email: document.getElementById('fs-contact-email').value.trim() || null,
+      contact_telefoon: document.getElementById('fs-contact-telefoon').value.trim() || null,
     };
     try {
       FIN.settings = await saveFinSettings(payload);

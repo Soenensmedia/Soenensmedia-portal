@@ -46,6 +46,7 @@ export const state = {
   clientConceptsByProject: {},
   portalWelcomeGuide: '',
   portalDeliveryGuide: '',
+  clientOwnRecords: [],
 };
 
 export function startOfWeek(date) {

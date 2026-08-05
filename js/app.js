@@ -10,7 +10,7 @@ import { renderScripting, openConceptForm, importScriptFile } from './scripting.
 import { renderDeadlines } from './deadlines.js';
 import { renderContent } from './content.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
-import { renderClientView } from './clientView.js';
+import { renderClientView, openEditNameModal } from './clientView.js';
 import { showToast } from './toast.js';
 
 const loginView = document.getElementById('login-view');
@@ -37,6 +37,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 document.getElementById('client-logout-btn').addEventListener('click', async () => {
   await signOut();
 });
+document.getElementById('client-edit-name-btn').addEventListener('click', () => openEditNameModal());
 
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
 document.getElementById('new-time-entry-btn').addEventListener('click', openNewTimeEntryModal);

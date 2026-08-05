@@ -53,6 +53,9 @@ export const fetchOwnProfile = async () => {
   return sb.from('profiles').select('*').eq('id', user.id).single().then(unwrap);
 };
 
+export const updateOwnName = (fullName) =>
+  sb.rpc('update_own_name', { p_full_name: fullName }).then(unwrap);
+
 // ── klantenportaal ─────────────────────────────────────
 export const linkClientByEmail = (projectId, email) =>
   sb.rpc('link_client_by_email', { p_project_id: projectId, p_email: email }).then(unwrap);

@@ -338,3 +338,16 @@ Voer [`sql/016_client_journey.sql`](sql/016_client_journey.sql) uit in de SQL Ed
 1. Ga naar **Klanten → "Welkomstgids & delivery-gids"** en schrijf beide teksten (bv. hoe het proces verloopt, hoe ze bestanden downloaden).
 2. Wil je dat een klant eerst een overeenkomst moet tekenen? Vul de **"Overeenkomst"**-sectie in bij dat specifieke opdracht-detailvenster. Leeg = geen gate.
 3. Na ondertekenen zie je in het opdrachtvenster wie tekende en wanneer, met een knopje om de handtekening te wissen (bv. na een wijziging in de voorwaarden, zodat de klant opnieuw moet tekenen).
+
+## Fase 12 — Klant kan eigen naam instellen + retainer-voortgang zien (nieuw)
+
+- **"Mijn naam"**-knop bovenaan in het klantportaal (naast Uitloggen, overal zichtbaar) — de klant typt zelf zijn/haar naam in, i.p.v. dat enkel jij die instelt. Wordt meteen gebruikt in "Welkom, [naam]".
+- **Retainer-voortgang**: een vaste-maandklant (die je als "Retainer" markeerde bij Klanten) ziet nu in zijn projectvenster een **"Jouw retainer"**-sectie: hoeveel video's dit jaar al geleverd zijn t.o.v. het jaardoel, en de verlengdatum. Automatisch zichtbaar zodra een opdracht gekoppeld is aan een klant met `is_retainer` aangevinkt — niets extra in te stellen.
+
+### Eenmalig instellen
+
+Voer [`sql/017_client_self_service.sql`](sql/017_client_self_service.sql) uit in de SQL Editor.
+
+### Beveiliging
+
+De klant kan enkel de **eigen** naam wijzigen (via een RPC die enkel `full_name` aanraakt, niet de rol) en enkel de **eigen gekoppelde** klantenrij lezen (via de projectkoppeling) — nooit die van andere klanten.

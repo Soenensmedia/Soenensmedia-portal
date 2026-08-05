@@ -1,6 +1,7 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName } from './data.js';
+import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -25,6 +26,12 @@ export async function renderClientView() {
   } catch {
     state.portalWelcomeGuide = '';
     state.portalDeliveryGuide = '';
+  }
+
+  try {
+    state.clientOwnRecords = await fetchClients();
+  } catch {
+    state.clientOwnRecords = [];
   }
 
   state.clientProjects = projects;
@@ -184,6 +191,41 @@ function wireAgreementForm(p) {
   });
 }
 
+export function openEditNameModal() {
+  openModal(`
+    <div class="modal-header"><h2>Mijn naam</h2></div>
+    <form id="edit-name-form">
+      <div class="field"><label>Volledige naam</label><input type="text" id="edit-name-input" value="${escapeAttr(state.profile?.full_name ?? '')}" required></div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="edit-name-cancel">Annuleren</button>
+          <button type="submit" class="btn btn-red">Opslaan</button>
+        </div>
+      </div>
+    </form>
+  `);
+  document.getElementById('edit-name-cancel').addEventListener('click', closeModal);
+  document.getElementById('edit-name-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('edit-name-input').value.trim();
+    if (!name) return;
+    try {
+      await updateOwnName(name);
+      state.profile = await fetchOwnProfile();
+      closeModal();
+      showToast('Naam opgeslagen');
+      if (state.activeClientProjectId) {
+        renderClientProjectDetail(state.activeClientProjectId);
+      } else {
+        renderClientList();
+      }
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+}
+
 // Elke 5de foto krijgt een groter formaat, gebaseerd op de echte afmetingen
 // (rechtop vs liggend) zodat een staande foto nooit plat-getrokken wordt.
 function applyMosaicLayout(container) {
@@ -241,6 +283,21 @@ function statusStepperHtml(status) {
     </div>`;
 }
 
+function retainerHtml(p) {
+  const record = p.client_id ? state.clientOwnRecords.find((c) => c.id === p.client_id) : null;
+  if (!record?.is_retainer) return '';
+  const geleverd = record.retainer_videos_geleverd_dit_jaar ?? 0;
+  const doel = record.retainer_videos_doel_per_jaar;
+  return `
+    <div class="detail-section">
+      <h3>Jouw retainer</h3>
+      <div class="client-meta-row">
+        <div class="client-meta-item"><span class="client-meta-label">Video's dit jaar</span><span>${geleverd}${doel ? ` / ${doel}` : ''}</span></div>
+        ${record.retainer_verlengdatum ? `<div class="client-meta-item"><span class="client-meta-label">Verlengdatum</span><span>${fmtDate(new Date(record.retainer_verlengdatum))}</span></div>` : ''}
+      </div>
+    </div>`;
+}
+
 function projectDetailHtml(p, feedback, photos, concepts) {
   const cover = photos[0]?.url;
   return `
@@ -275,6 +332,8 @@ function projectDetailHtml(p, feedback, photos, concepts) {
         ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
         ${p.created_at ? `<div class="client-meta-item"><span class="client-meta-label">Opdracht sinds</span><span>${fmtDate(new Date(p.created_at))}</span></div>` : ''}
       </div>
+
+      ${retainerHtml(p)}
 
       <div class="detail-section">
         <h3>Project brief</h3>

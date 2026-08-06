@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { fetchClients, createClient, updateClient, deleteClient, fetchPortalContent, savePortalContent } from './data.js';
+import { fetchClients, createClient, updateClient, deleteClient, fetchPortalContent, savePortalContent, fetchFinSettings, saveFinSettings, uploadPortalPhoto, deletePortalPhoto, getPortalPhotoUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
@@ -63,22 +63,38 @@ function renderList() {
 }
 
 export async function openPortalContentEditor() {
-  openModal('<div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div><div class="empty-note">Laden...</div>');
-  let welcome, delivery;
+  openModal('<div class="modal-header"><h2>Portal-instellingen</h2></div><div class="empty-note">Laden...</div>');
+  let welcome, delivery, settings;
   try {
-    [welcome, delivery] = await Promise.all([
+    [welcome, delivery, settings] = await Promise.all([
       fetchPortalContent('welcome_guide'),
       fetchPortalContent('delivery_guide'),
+      fetchFinSettings(),
     ]);
   } catch (err) {
-    openModal(`<div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div><div class="empty-note">Kon niet laden: ${escapeHtml(err.message)}</div>`);
+    openModal(`<div class="modal-header"><h2>Portal-instellingen</h2></div><div class="empty-note">Kon niet laden: ${escapeHtml(err.message)}</div>`);
     return;
   }
+  const photoPath = settings?.portal_photo_path ?? null;
+  const photoUrl = getPortalPhotoUrl(photoPath);
+  let removePhoto = false;
+
   openModal(`
-    <div class="modal-header"><h2>Welkomstgids & delivery-gids</h2></div>
+    <div class="modal-header"><h2>Portal-instellingen</h2></div>
     <form id="portal-content-form">
       <div class="field">
-        <label>Welkomstgids (klant ziet dit bovenaan elk project)</label>
+        <label>Bedrijfsfoto (klant ziet dit bovenaan het portaal)</label>
+        <div id="pc-photo-preview-wrap">
+          ${photoUrl ? `
+            <div class="portal-photo-preview">
+              <img src="${escapeAttr(photoUrl)}" alt="">
+              <button type="button" class="btn btn-ghost btn-small" id="pc-photo-remove">Verwijderen</button>
+            </div>` : ''}
+        </div>
+        <input type="file" id="pc-photo-input" accept="image/*">
+      </div>
+      <div class="field">
+        <label>Welkomstgids (klant ziet dit op het startscherm)</label>
         <textarea id="pc-welcome" rows="6" placeholder="Welkom bij SoenensMedia! Hier volgt hoe het proces verloopt...">${escapeHtml(welcome?.content ?? '')}</textarea>
       </div>
       <div class="field">
@@ -94,13 +110,28 @@ export async function openPortalContentEditor() {
       </div>
     </form>
   `);
+  document.getElementById('pc-photo-remove')?.addEventListener('click', () => {
+    removePhoto = true;
+    document.getElementById('pc-photo-preview-wrap').innerHTML = '';
+    showToast('Foto wordt verwijderd bij opslaan');
+  });
   document.getElementById('pc-cancel').addEventListener('click', closeModal);
   document.getElementById('portal-content-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
+      const file = document.getElementById('pc-photo-input').files[0];
+      let newPhotoPath = photoPath;
+      if (file) {
+        newPhotoPath = await uploadPortalPhoto(file);
+        if (photoPath) await deletePortalPhoto(photoPath).catch(() => {});
+      } else if (removePhoto && photoPath) {
+        await deletePortalPhoto(photoPath).catch(() => {});
+        newPhotoPath = null;
+      }
       await Promise.all([
         savePortalContent('welcome_guide', document.getElementById('pc-welcome').value.trim() || null),
         savePortalContent('delivery_guide', document.getElementById('pc-delivery').value.trim() || null),
+        saveFinSettings({ ...settings, portal_photo_path: newPhotoPath }),
       ]);
       closeModal();
       showToast('Opgeslagen');

@@ -272,3 +272,25 @@ export const fetchContentGoals = () =>
   sb.from('content_goals').select('*').then(unwrap);
 export const saveContentGoal = (platform, doelPerWeek) =>
   sb.from('content_goals').upsert({ platform, doel_per_week: doelPerWeek }, { onConflict: 'platform' }).select().single().then(unwrap);
+
+// ── portal-branding (bedrijfsfoto bovenaan het klantportaal) ──
+const PORTAL_BRANDING_BUCKET = 'portal-branding';
+
+export const uploadPortalPhoto = async (file) => {
+  const path = `company/${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(PORTAL_BRANDING_BUCKET).upload(path, file);
+  if (error) throw error;
+  return path;
+};
+
+// Publieke bucket: de publieke URL is meteen bruikbaar, geen signed url nodig.
+export const getPortalPhotoUrl = (path) => {
+  if (!path) return null;
+  const { data } = sb.storage.from(PORTAL_BRANDING_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+};
+
+export const deletePortalPhoto = async (path) => {
+  const { error } = await sb.storage.from(PORTAL_BRANDING_BUCKET).remove([path]);
+  if (error) throw error;
+};

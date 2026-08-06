@@ -387,6 +387,14 @@ table.log-table tr:last-child td { border-bottom: none; }
 }
 
 /* ══════════ KLANT: WELKOM & PROJECTLIJST ══════════ */
+.client-portal-hero {
+  width: 100%; aspect-ratio: 21/6; border-radius: 10px; overflow: hidden; margin-bottom: 22px;
+  background: var(--paneld) center/cover no-repeat; border: 1px solid var(--line);
+}
+@media (max-width: 600px) {
+  .client-portal-hero { aspect-ratio: 16/9; }
+}
+
 .client-welcome { margin-bottom: 24px; }
 .client-welcome-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #fff; letter-spacing: .03em; }
 .client-welcome-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
@@ -425,6 +433,24 @@ table.log-table tr:last-child td { border-bottom: none; }
 
 .client-status-hint {
   font-size: 12.5px; color: var(--text-dim); text-align: center; margin: 2px 0 8px;
+}
+
+/* ══════════ KLANT: PROJECTDETAIL-TABS ══════════ */
+.client-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap; margin: 20px 0 16px;
+  border-bottom: 1px solid var(--line); padding-bottom: 12px;
+}
+.client-tab-btn {
+  background: transparent; color: var(--text-dim);
+  font-size: 12.5px; font-weight: 500; padding: 7px 14px; border-radius: 6px; white-space: nowrap;
+}
+.client-tab-btn.active { background: var(--red); color: #fff; }
+.client-tab-panel .detail-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+/* ══════════ ADMIN: PORTAL-INSTELLINGEN ══════════ */
+.portal-photo-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.portal-photo-preview img {
+  width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line);
 }
 
 .client-back-btn { margin-bottom: 16px; }

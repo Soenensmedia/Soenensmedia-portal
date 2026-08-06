@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { generateFactuurPdf, generateOffertePdf, downloadPdf } from './pdf.js';
 import { showToast } from './toast.js';
@@ -42,10 +42,12 @@ export async function renderClientView() {
     state.clientFacturen = facturen;
     state.clientOffertes = offertes;
     state.clientFinSettings = settings || {};
+    state.portalPhotoUrl = getPortalPhotoUrl(settings?.portal_photo_path);
   } catch {
     state.clientFacturen = [];
     state.clientOffertes = [];
     state.clientFinSettings = {};
+    state.portalPhotoUrl = '';
   }
 
   state.clientProjects = projects;
@@ -116,6 +118,7 @@ function renderClientList() {
   const done = state.clientProjects.filter((p) => CLIENT_DONE_STATUSES.includes(p.status));
 
   container.innerHTML = `
+    ${state.portalPhotoUrl ? `<div class="client-portal-hero" style="background-image:url('${escapeAttr(state.portalPhotoUrl)}')"></div>` : ''}
     <div class="client-welcome">
       <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
@@ -137,7 +140,7 @@ function renderClientList() {
 
 function tileHtml(p) {
   const photos = state.clientPhotosByProject[p.id] || [];
-  const cover = photos[0]?.url;
+  const cover = photos[0]?.url || state.portalPhotoUrl;
   return `
     <div class="client-project-tile" data-id="${p.id}">
       <div class="tile-cover" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
@@ -151,6 +154,9 @@ function tileHtml(p) {
 }
 
 function renderClientProjectDetail(projectId) {
+  if (state.activeClientProjectId !== projectId) {
+    state.activeClientDetailTab = 'overzicht';
+  }
   state.activeClientProjectId = projectId;
   const p = state.clientProjects.find((x) => x.id === projectId);
   if (!p) {
@@ -188,7 +194,9 @@ function renderClientProjectDetail(projectId) {
 function agreementGateHtml(p) {
   return `
     <div class="client-project-card">
-      <div class="client-hero"><div class="client-hero-placeholder">SM</div></div>
+      <div class="client-hero" ${state.portalPhotoUrl ? `style="background-image:url('${escapeAttr(state.portalPhotoUrl)}')"` : ''}>
+        ${!state.portalPhotoUrl ? '<div class="client-hero-placeholder">SM</div>' : ''}
+      </div>
       ${state.portalWelcomeGuide ? `
         <div class="detail-section" style="border-top:none; padding-top:0;">
           <h3>Welkom</h3>
@@ -356,29 +364,6 @@ const CLIENT_FACTUUR_STATUS_LABELS = { open: 'Open', betaald: 'Betaald' };
 const CLIENT_OFFERTE_STATUS_LABELS = { verstuurd: 'Verstuurd', geaccepteerd: 'Geaccepteerd', geweigerd: 'Geweigerd' };
 const clientEur = (n) => '€ ' + (Math.round((n || 0) * 100) / 100).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function financeHtml(p) {
-  const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
-  const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
-  if (!facturen.length && !offertes.length) return '';
-  return `
-    <div class="detail-section">
-      <h3>Offertes & Facturen</h3>
-      ${offertes.map((o) => `
-        <div class="detail-list-item">
-          <span>Offerte ${escapeHtml(o.offertenummer || '')} — ${clientEur(o.bedrag)} <span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${CLIENT_OFFERTE_STATUS_LABELS[o.status] ?? o.status}</span></span>
-          <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="offerte" data-id="${o.id}">Download</button>
-        </div>`).join('')}
-      ${facturen.map((f) => {
-        const incl = Number(f.bedrag) * (1 + Number(f.btw) / 100);
-        return `
-        <div class="detail-list-item">
-          <span>Factuur ${escapeHtml(f.factuurnummer || '')} — ${clientEur(incl)} <span class="badge-status ${f.status}">${CLIENT_FACTUUR_STATUS_LABELS[f.status] ?? f.status}</span></span>
-          <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="factuur" data-id="${f.id}">Download</button>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-
 async function handleClientDownload(kind, id) {
   const row = kind === 'factuur' ? state.clientFacturen.find((f) => f.id === id) : state.clientOffertes.find((o) => o.id === id);
   if (!row) return;
@@ -395,19 +380,125 @@ async function handleClientDownload(kind, id) {
   }
 }
 
+const CLIENT_DETAIL_TABS = [
+  { key: 'overzicht', label: 'Overzicht' },
+  { key: 'ideeen', label: 'Ideeën & Scripts' },
+  { key: 'media', label: "Foto's & Video" },
+  { key: 'financien', label: 'Offertes & Facturen' },
+  { key: 'feedback', label: 'Feedback' },
+];
+
+function overzichtTabHtml(p) {
+  return `
+    ${state.portalWelcomeGuide ? `
+      <div class="detail-section" style="border-top:none; padding-top:0;">
+        <h3>Welkom</h3>
+        <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
+      </div>` : ''}
+
+    <div class="client-meta-row">
+      ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
+      ${p.created_at ? `<div class="client-meta-item"><span class="client-meta-label">Opdracht sinds</span><span>${fmtDate(new Date(p.created_at))}</span></div>` : ''}
+    </div>
+
+    ${retainerHtml(p)}
+
+    <div class="detail-section">
+      <h3>Project brief</h3>
+      ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : '<div class="client-empty-state">✍️ De briefing komt hier binnenkort te staan.</div>'}
+      ${p.deliverables
+        ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>`
+        : ''}
+    </div>`;
+}
+
+function ideeenTabHtml(concepts, feedback) {
+  return concepts.length
+    ? `<div class="concept-list">${concepts.map((c) => conceptCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}</div>`
+    : '<div class="client-empty-state">💡 Nog geen ideeën of scripts toegevoegd — die verschijnen hier zodra ze klaarstaan.</div>';
+}
+
+function mediaTabHtml(p, photos) {
+  return `
+    <div class="section-header-row">
+      <h3>Foto's</h3>
+      ${photos.length ? `<button type="button" class="btn btn-ghost btn-small" id="download-all-btn">Download alles</button>` : ''}
+    </div>
+    ${photos.length
+      ? `<div class="photo-grid gallery-mosaic">${photos.map((ph, i) => `<div class="photo-thumb" data-index="${i}"><img src="${escapeAttr(ph.url)}" alt=""></div>`).join('')}</div>`
+      : '<div class="client-empty-state">📷 Nog geen foto\'s — deze verschijnen hier zodra de shoot achter de rug is.</div>'}
+
+    ${p.frame_io_url ? `
+      <div class="detail-section">
+        <h3>Review</h3>
+        ${p.frame_io_is_folder
+          ? `<div class="frame-folder-card">
+               <div class="frame-folder-text">
+                 <div class="frame-folder-title">Volledige levering klaar</div>
+                 <div class="frame-folder-sub">Bekijk alle bestanden en geef feedback op Frame.io</div>
+               </div>
+               <a class="btn btn-red btn-small" href="${escapeAttr(p.frame_io_url)}" target="_blank" rel="noopener">Openen</a>
+             </div>`
+          : `<div class="frame-embed-wrapper"><iframe src="${escapeAttr(p.frame_io_url)}" allow="fullscreen" loading="lazy"></iframe></div>
+             <a class="btn btn-ghost btn-small" href="${escapeAttr(p.frame_io_url)}" target="_blank" rel="noopener">Open in Frame.io</a>`}
+      </div>` : ''}
+
+    ${state.portalDeliveryGuide ? `
+      <div class="detail-section">
+        <h3>Delivery-gids</h3>
+        <p class="client-brief-text">${escapeHtml(state.portalDeliveryGuide)}</p>
+      </div>` : ''}`;
+}
+
+function financeTabHtml(offertes, facturen) {
+  return `
+    ${offertes.map((o) => `
+      <div class="detail-list-item">
+        <span>Offerte ${escapeHtml(o.offertenummer || '')} — ${clientEur(o.bedrag)} <span class="badge-status ${o.status === 'geaccepteerd' ? 'goedgekeurd' : o.status === 'geweigerd' ? 'aanpassing_gevraagd' : 'in_afwachting'}">${CLIENT_OFFERTE_STATUS_LABELS[o.status] ?? o.status}</span></span>
+        <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="offerte" data-id="${o.id}">Download</button>
+      </div>`).join('')}
+    ${facturen.map((f) => {
+      const incl = Number(f.bedrag) * (1 + Number(f.btw) / 100);
+      return `
+      <div class="detail-list-item">
+        <span>Factuur ${escapeHtml(f.factuurnummer || '')} — ${clientEur(incl)} <span class="badge-status ${f.status}">${CLIENT_FACTUUR_STATUS_LABELS[f.status] ?? f.status}</span></span>
+        <button type="button" class="btn btn-ghost btn-small client-download-doc" data-kind="factuur" data-id="${f.id}">Download</button>
+      </div>`;
+    }).join('')}`;
+}
+
+function feedbackTabHtml(generalFeedback) {
+  return `
+    ${generalFeedback.length
+      ? generalFeedback.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
+      : '<div class="empty-note">Nog geen feedback.</div>'}
+    <form id="fb-form" class="feedback-form">
+      <input type="text" id="fb-input" placeholder="Schrijf feedback...">
+      <button type="submit" class="btn btn-red btn-small">Versturen</button>
+    </form>`;
+}
+
 function projectDetailHtml(p, feedback, photos, concepts) {
-  const cover = photos[0]?.url;
+  const cover = photos[0]?.url || state.portalPhotoUrl;
+  const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
+  const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
+  const generalFeedback = feedback.filter((f) => !f.concept_id);
+
+  const tabCounts = {
+    ideeen: concepts.length,
+    media: photos.length,
+    financien: facturen.length + offertes.length,
+    feedback: generalFeedback.length,
+  };
+
+  const visibleTabs = CLIENT_DETAIL_TABS.filter((t) => t.key !== 'financien' || tabCounts.financien > 0);
+  const activeTab = visibleTabs.some((t) => t.key === state.activeClientDetailTab) ? state.activeClientDetailTab : 'overzicht';
+
   return `
     <div class="client-project-card">
       <div class="client-hero" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
         ${!cover ? '<div class="client-hero-placeholder">SM</div>' : ''}
       </div>
-
-      ${state.portalWelcomeGuide ? `
-        <div class="detail-section" style="border-top:none; padding-top:0;">
-          <h3>Welkom</h3>
-          <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
-        </div>` : ''}
 
       <div class="client-project-header">
         <div>
@@ -426,86 +517,38 @@ function projectDetailHtml(p, feedback, photos, concepts) {
       ${statusStepperHtml(p.status)}
       ${statusHintHtml(p.status)}
 
-      <div class="client-meta-row">
-        ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
-        ${p.created_at ? `<div class="client-meta-item"><span class="client-meta-label">Opdracht sinds</span><span>${fmtDate(new Date(p.created_at))}</span></div>` : ''}
+      <div class="client-tabs">
+        ${visibleTabs.map((t) => `
+          <button type="button" class="client-tab-btn ${t.key === activeTab ? 'active' : ''}" data-clienttab="${t.key}">${escapeHtml(t.label)}${tabCounts[t.key] ? ` (${tabCounts[t.key]})` : ''}</button>`).join('')}
       </div>
 
-      ${retainerHtml(p)}
-
-      <div class="detail-section">
-        <h3>Project brief</h3>
-        ${p.client_brief ? `<p class="client-brief-text">${escapeHtml(p.client_brief)}</p>` : '<div class="client-empty-state">✍️ De briefing komt hier binnenkort te staan.</div>'}
-        ${p.deliverables
-          ? `<div class="deliverables-box"><h3>Deliverables</h3><p>${escapeHtml(p.deliverables)}</p></div>`
-          : ''}
-      </div>
-
-      <div class="detail-section">
-        <h3>Ideeën & Scripts</h3>
-        ${concepts.length
-          ? `<div class="concept-list">${concepts.map((c) => conceptCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}</div>`
-          : '<div class="client-empty-state">💡 Nog geen ideeën of scripts toegevoegd — die verschijnen hier zodra ze klaarstaan.</div>'}
-      </div>
-
-      <div class="detail-section">
-        <div class="section-header-row">
-          <h3>Foto's</h3>
-          ${photos.length ? `<button type="button" class="btn btn-ghost btn-small" id="download-all-btn">Download alles</button>` : ''}
-        </div>
-        ${photos.length
-          ? `<div class="photo-grid gallery-mosaic">${photos.map((ph, i) => `<div class="photo-thumb" data-index="${i}"><img src="${escapeAttr(ph.url)}" alt=""></div>`).join('')}</div>`
-          : '<div class="client-empty-state">📷 Nog geen foto\'s — deze verschijnen hier zodra de shoot achter de rug is.</div>'}
-      </div>
-
-      ${p.frame_io_url ? `
-        <div class="detail-section">
-          <h3>Review</h3>
-          ${p.frame_io_is_folder
-            ? `<div class="frame-folder-card">
-                 <div class="frame-folder-text">
-                   <div class="frame-folder-title">Volledige levering klaar</div>
-                   <div class="frame-folder-sub">Bekijk alle bestanden en geef feedback op Frame.io</div>
-                 </div>
-                 <a class="btn btn-red btn-small" href="${escapeAttr(p.frame_io_url)}" target="_blank" rel="noopener">Openen</a>
-               </div>`
-            : `<div class="frame-embed-wrapper"><iframe src="${escapeAttr(p.frame_io_url)}" allow="fullscreen" loading="lazy"></iframe></div>
-               <a class="btn btn-ghost btn-small" href="${escapeAttr(p.frame_io_url)}" target="_blank" rel="noopener">Open in Frame.io</a>`}
-        </div>` : ''}
-
-      ${state.portalDeliveryGuide ? `
-        <div class="detail-section">
-          <h3>Delivery-gids</h3>
-          <p class="client-brief-text">${escapeHtml(state.portalDeliveryGuide)}</p>
-        </div>` : ''}
-
-      ${financeHtml(p)}
-
-      <div class="detail-section">
-        <h3>Feedback</h3>
-        ${(() => {
-          const general = feedback.filter((f) => !f.concept_id);
-          return general.length
-            ? general.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
-            : '<div class="empty-note">Nog geen feedback.</div>';
-        })()}
-        <form id="fb-form-${p.id}" class="feedback-form">
-          <input type="text" id="fb-input-${p.id}" placeholder="Schrijf feedback...">
-          <button type="submit" class="btn btn-red btn-small">Versturen</button>
-        </form>
+      <div class="client-tab-panel">
+        ${activeTab === 'overzicht' ? overzichtTabHtml(p) : ''}
+        ${activeTab === 'ideeen' ? ideeenTabHtml(concepts, feedback) : ''}
+        ${activeTab === 'media' ? mediaTabHtml(p, photos) : ''}
+        ${activeTab === 'financien' ? financeTabHtml(offertes, facturen) : ''}
+        ${activeTab === 'feedback' ? feedbackTabHtml(generalFeedback) : ''}
       </div>
     </div>`;
 }
 
 function wireProjectDetailEvents(p, photos, feedback, concepts) {
+  document.querySelectorAll('.client-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.activeClientDetailTab = btn.dataset.clienttab;
+      renderClientProjectDetail(p.id);
+      document.querySelector('.client-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   document.querySelectorAll('.client-download-doc').forEach((btn) => {
     btn.addEventListener('click', () => handleClientDownload(btn.dataset.kind, btn.dataset.id));
   });
 
-  const form = document.getElementById(`fb-form-${p.id}`);
+  const form = document.getElementById('fb-form');
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const input = document.getElementById(`fb-input-${p.id}`);
+    const input = document.getElementById('fb-input');
     const message = input.value.trim();
     if (!message) return;
     try {

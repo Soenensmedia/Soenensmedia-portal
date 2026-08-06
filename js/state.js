@@ -39,6 +39,7 @@ export const state = {
   weekStart: startOfWeek(new Date()),
   activeProjectId: null,
   activeClientProjectId: null,
+  activeClientDetailTab: 'overzicht',
   activeScriptingProjectId: null,
   clientProjects: [],
   clientFeedbackByProject: {},

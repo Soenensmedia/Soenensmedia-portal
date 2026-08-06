@@ -368,3 +368,21 @@ Vul daarna je contactgegevens in bij **Financiën → Instellingen → Bedrijfsg
 ### Beveiliging
 
 De klant ziet enkel offertes/facturen die via het project aan zijn eigen account gekoppeld zijn (RLS-check op `project.client_user_id = auth.uid()`) — nooit die van een ander project/klant.
+
+## Fase 14 — Klant-projectpagina in tabs + bedrijfsfoto (nieuw)
+
+De projectpagina bij de klant was uitgegroeid tot 1 lange scroll (briefing, ideeën, foto's, offertes, feedback allemaal onder elkaar). Dat is nu opgesplitst in tabs, plus een bedrijfsfoto die je zelf instelt.
+
+- **Tabs in het projectvenster**: Overzicht / Ideeën & Scripts / Foto's & Video / Offertes & Facturen / Feedback. Elke tab toont tussen haakjes hoeveel items erin zitten (bv. "Foto's & Video (12)"), en "Offertes & Facturen" verschijnt enkel als er ook echt iets aan dat project gekoppeld is. De status­balk en "wat nu?"-uitleg blijven altijd zichtbaar, ongeacht welke tab open staat.
+- **Bedrijfsfoto**: een foto van jou/je werk die bovenaan het klantportaal verschijnt (welkomstscherm) en als achtergrond dient voor projecten die zelf nog geen foto hebben — voelt persoonlijker dan het kale "SM"-icoon.
+- De **welkomstgids** stond voorheen op élk project herhaald — die staat nu alleen nog op het startscherm (waar hij al stond), niet meer dubbel in elk projectvenster.
+
+### Eenmalig instellen
+
+Voer [`sql/020_portal_branding.sql`](sql/020_portal_branding.sql) uit in de SQL Editor.
+
+Ga naar **Klanten → Portal-instellingen** (hernoemd van "Welkomstgids & delivery-gids") en upload daar je bedrijfsfoto — verschijnt meteen bij alle klanten.
+
+### Beveiliging
+
+De bedrijfsfoto staat in een publieke opslag-bucket (het is geen gevoelige data, gewoon een foto van je bedrijf) — enkel jij (admin) kan uploaden of verwijderen, klanten kunnen alleen bekijken.

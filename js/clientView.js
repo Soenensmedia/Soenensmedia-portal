@@ -1,8 +1,8 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
-import { generateFactuurPdf, generateOffertePdf, downloadPdf } from './pdf.js';
+import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, downloadPdf } from './pdf.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -165,7 +165,7 @@ function renderClientProjectDetail(projectId) {
   }
 
   const container = document.getElementById('client-projects-container');
-  const needsSigning = p.agreement_content && !p.agreement_signed_at;
+  const needsSigning = (p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at;
 
   if (needsSigning) {
     container.innerHTML = `
@@ -207,8 +207,10 @@ function agreementGateHtml(p) {
       </div>
       <div class="detail-section">
         <h3>Overeenkomst</h3>
-        <p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>
-        <form id="agreement-form-${p.id}">
+        ${p.agreement_bestand_naam
+          ? `<button type="button" class="btn btn-ghost btn-small" id="agreement-view-file-${p.id}">📄 Bekijk contract (${escapeHtml(p.agreement_bestand_naam)})</button>`
+          : `<p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>`}
+        <form id="agreement-form-${p.id}" style="margin-top:14px;">
           <div class="field"><label>Volledige naam</label><input type="text" id="agreement-name-${p.id}" required placeholder="Je naam"></div>
           <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); margin-bottom:14px;">
             <input type="checkbox" id="agreement-agree-${p.id}" style="width:auto;" required>
@@ -233,6 +235,14 @@ function wireAgreementForm(p) {
       renderClientProjectDetail(p.id);
     } catch (err) {
       showToast(err.message, true);
+    }
+  });
+
+  document.getElementById(`agreement-view-file-${p.id}`)?.addEventListener('click', async () => {
+    try {
+      window.open(await getAgreementFileUrl(p.agreement_bestand_path), '_blank');
+    } catch (err) {
+      showToast('Kon contract niet openen: ' + err.message, true);
     }
   });
 }
@@ -510,8 +520,10 @@ function projectDetailHtml(p, feedback, photos, concepts) {
           : `<button class="btn btn-red btn-small" id="approve-btn-${p.id}">Goedkeuren</button>`}
       </div>
 
-      ${p.agreement_content && p.agreement_signed_at
-        ? `<div class="empty-note">Overeenkomst ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.</div>`
+      ${(p.agreement_content || p.agreement_bestand_path) && p.agreement_signed_at
+        ? `<div class="empty-note">Overeenkomst ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.
+            <button type="button" class="btn btn-ghost btn-small agreement-copy-btn" data-id="${p.id}">Download kopie</button>
+          </div>`
         : ''}
 
       ${statusStepperHtml(p.status)}
@@ -543,6 +555,15 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
 
   document.querySelectorAll('.client-download-doc').forEach((btn) => {
     btn.addEventListener('click', () => handleClientDownload(btn.dataset.kind, btn.dataset.id));
+  });
+
+  document.querySelector('.agreement-copy-btn')?.addEventListener('click', () => {
+    try {
+      const doc = generateAgreementCopyPdf(p, state.clientFinSettings || {});
+      downloadPdf(doc, `overeenkomst-${(p.title || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`);
+    } catch (err) {
+      showToast('Kon kopie niet genereren: ' + err.message, true);
+    }
   });
 
   const form = document.getElementById('fb-form');

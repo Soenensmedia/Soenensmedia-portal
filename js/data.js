@@ -113,6 +113,27 @@ export const savePortalContent = (key, content) =>
 export const signAgreement = (projectId, signedName) =>
   sb.rpc('sign_agreement', { p_project_id: projectId, p_signed_name: signedName }).then(unwrap);
 
+// ── contract-bestand bij een opdracht ───────────────────
+const CONTRACTS_BUCKET = 'project-contracts';
+
+export const uploadAgreementFile = async (projectId, file) => {
+  const path = `${projectId}/${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(CONTRACTS_BUCKET).upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+};
+
+export const getAgreementFileUrl = async (path) => {
+  const { data, error } = await sb.storage.from(CONTRACTS_BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
+  if (error) throw error;
+  return data.signedUrl;
+};
+
+export const deleteAgreementFile = async (path) => {
+  const { error } = await sb.storage.from(CONTRACTS_BUCKET).remove([path]);
+  if (error) throw error;
+};
+
 // ── fotogalerij ─────────────────────────────────────────
 const PHOTOS_BUCKET = 'project-photos';
 const SIGNED_URL_TTL = 4 * 60 * 60; // 4 uur

@@ -386,3 +386,22 @@ Ga naar **Klanten → Portal-instellingen** (hernoemd van "Welkomstgids & delive
 ### Beveiliging
 
 De bedrijfsfoto staat in een publieke opslag-bucket (het is geen gevoelige data, gewoon een foto van je bedrijf) — enkel jij (admin) kan uploaden of verwijderen, klanten kunnen alleen bekijken.
+
+## Fase 15 — Contract uploaden, klant tekent met 1 knop, kopie downloaden (nieuw)
+
+Uitbreiding van de bestaande "Overeenkomst"-functie (Fase 11): naast zelf een contracttekst typen, kan je nu ook een eigen, volledig vormgegeven contract-PDF uploaden per opdracht, een standaardcontract instellen dat je met 1 klik hergebruikt, en na ondertekening een ondertekeningsbewijs downloaden — voor jou en voor de klant.
+
+- **Standaardcontract**: schrijf je vaste voorwaarden 1x in **Klanten → Portal-instellingen** ("Standaard contract-tekst"). Bij een nieuwe opdracht klik je in het detailvenster op **"Gebruik standaardcontract"** om die tekst meteen in te vullen — daarna nog aan te passen per klant indien nodig.
+- **Eigen contract-PDF uploaden**: heb je het contract liever zelf vormgegeven (Canva, Word, ...)? Upload het bestand rechtstreeks bij de opdracht — dat overschrijft de tekst voor de klant: die krijgt een "Bekijk contract"-knop met jouw eigen document, in plaats van platte tekst.
+- **Tekenen blijft zoals het was**: de klant kan het project pas verder bekijken nadat die zijn naam intypt en akkoord vinkt — geen aparte handeling nodig van jouw kant, je ziet meteen in het detailvenster wie wanneer getekend heeft.
+- **Kopie/ondertekeningsbewijs**: zodra getekend, verschijnt zowel bij jou (opdracht-detail) als bij de klant (Overzicht-tab) een **"Download kopie"**-knop. Dat genereert een klein, gebrand PDF-bewijs met projectnaam, naam van de ondertekenaar, datum, en de contracttekst (of een verwijzing naar het geüploade bestand) — een nette kopie voor je eigen archief.
+
+### Eenmalig instellen
+
+Voer [`sql/021_contracts.sql`](sql/021_contracts.sql) uit in de SQL Editor.
+
+Deze migratie bevat ook een **bugfix**: sinds Fase 13 kon een klant een geüpload offerte/factuur-bestand technisch niet downloaden (er ontbrak een leesrecht op de opslag-bucket, enkel op de databasetabel) — dat is nu gerepareerd.
+
+### Beveiliging
+
+Geüploade contracten staan in een privé bucket; enkel jij (admin) kan uploaden/verwijderen, en een klant kan enkel het contract van zijn **eigen** gekoppelde project bekijken — nooit dat van een ander project (zelfde `project_id`-scoping als foto's en offertes/facturen).

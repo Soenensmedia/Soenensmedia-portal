@@ -1,9 +1,10 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
+import { generateAgreementCopyPdf, downloadPdf } from './pdf.js';
 
 export function openProjectDetail(id) {
   const p = projectById(id);
@@ -69,10 +70,28 @@ export function openProjectDetail(id) {
 
     <div class="detail-section">
       <h3>Overeenkomst (optioneel)</h3>
-      <div class="empty-note">Leeg = geen overeenkomst nodig, klant ziet meteen de rest van het project. Ingevuld = klant moet eerst tekenen voor die verder mag.</div>
+      <div class="empty-note">Leeg = geen overeenkomst nodig, klant ziet meteen de rest van het project. Ingevuld (tekst of bestand) = klant moet eerst tekenen voor die verder mag.</div>
+      <div class="field-row" style="margin-bottom:10px;">
+        <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-template">Gebruik standaardcontract</button>
+      </div>
       <div class="field"><label>Tekst van de overeenkomst</label><textarea id="pd-agreement" rows="6" placeholder="Voorwaarden, prijsafspraak, gebruiksrechten, ...">${escapeHtml(p.agreement_content ?? '')}</textarea></div>
+      <div class="field">
+        <label>Eigen contract-PDF (optioneel — overschrijft de tekst hierboven voor de klant)</label>
+        <div id="pd-agreement-file-wrap">
+          ${p.agreement_bestand_naam ? `
+            <div class="detail-list-item">
+              <span>📄 ${escapeHtml(p.agreement_bestand_naam)}</span>
+              <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-remove">Verwijderen</button>
+            </div>` : ''}
+        </div>
+        <input type="file" id="pd-agreement-file-input" accept="application/pdf,image/*">
+        <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-upload">Uploaden</button>
+      </div>
       ${p.agreement_signed_at
-        ? `<div class="empty-note">Getekend door <strong>${escapeHtml(p.agreement_signed_name ?? '')}</strong> op ${fmtDate(new Date(p.agreement_signed_at))}. <button type="button" class="btn-icon" id="pd-reset-agreement" title="Handtekening wissen (bv. na wijziging voorwaarden)">✕</button></div>`
+        ? `<div class="empty-note">Getekend door <strong>${escapeHtml(p.agreement_signed_name ?? '')}</strong> op ${fmtDate(new Date(p.agreement_signed_at))}.
+            <button type="button" class="btn-icon" id="pd-reset-agreement" title="Handtekening wissen (bv. na wijziging voorwaarden)">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-copy">Download kopie (ondertekeningsbewijs)</button>`
         : '<div class="empty-note">Nog niet ondertekend.</div>'}
     </div>
 
@@ -214,6 +233,63 @@ export function openProjectDetail(id) {
       showToast('Handtekening gewist');
     } catch (err) {
       showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-agreement-template').addEventListener('click', async () => {
+    try {
+      const tpl = await fetchPortalContent('contract_template');
+      if (!tpl?.content) {
+        showToast('Nog geen standaardcontract ingesteld (Klanten → Portal-instellingen)', true);
+        return;
+      }
+      document.getElementById('pd-agreement').value = tpl.content;
+      showToast('Standaardcontract ingevuld — pas eventueel aan en sla op');
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-agreement-file-upload').addEventListener('click', async () => {
+    const input = document.getElementById('pd-agreement-file-input');
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      if (p.agreement_bestand_path) await deleteAgreementFile(p.agreement_bestand_path).catch(() => {});
+      const path = await uploadAgreementFile(id, file);
+      const updated = await updateProject(id, { agreement_bestand_path: path, agreement_bestand_naam: file.name });
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      showToast('Contract geüpload');
+      closeModal();
+      openProjectDetail(id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-agreement-file-remove')?.addEventListener('click', async () => {
+    if (!confirm('Geüpload contract verwijderen?')) return;
+    try {
+      if (p.agreement_bestand_path) await deleteAgreementFile(p.agreement_bestand_path).catch(() => {});
+      const updated = await updateProject(id, { agreement_bestand_path: null, agreement_bestand_naam: null });
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      showToast('Contract verwijderd');
+      closeModal();
+      openProjectDetail(id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-agreement-copy')?.addEventListener('click', async () => {
+    try {
+      const settings = await fetchFinSettings();
+      const doc = generateAgreementCopyPdf(p, settings || {});
+      downloadPdf(doc, `overeenkomst-${(p.title || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`);
+    } catch (err) {
+      showToast('Kon kopie niet genereren: ' + err.message, true);
     }
   });
 }

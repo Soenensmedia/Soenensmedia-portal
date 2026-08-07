@@ -64,11 +64,12 @@ function renderList() {
 
 export async function openPortalContentEditor() {
   openModal('<div class="modal-header"><h2>Portal-instellingen</h2></div><div class="empty-note">Laden...</div>');
-  let welcome, delivery, settings;
+  let welcome, delivery, contractTemplate, settings;
   try {
-    [welcome, delivery, settings] = await Promise.all([
+    [welcome, delivery, contractTemplate, settings] = await Promise.all([
       fetchPortalContent('welcome_guide'),
       fetchPortalContent('delivery_guide'),
+      fetchPortalContent('contract_template'),
       fetchFinSettings(),
     ]);
   } catch (err) {
@@ -101,6 +102,10 @@ export async function openPortalContentEditor() {
         <label>Delivery-gids (klant ziet dit bij de opgeleverde bestanden)</label>
         <textarea id="pc-delivery" rows="6" placeholder="Je bestanden staan klaar! Zo download en gebruik je ze...">${escapeHtml(delivery?.content ?? '')}</textarea>
       </div>
+      <div class="field">
+        <label>Standaard contract-tekst (bij een opdracht: "Gebruik standaardcontract")</label>
+        <textarea id="pc-contract" rows="8" placeholder="Voorwaarden, prijsafspraak, gebruiksrechten, leveringstermijn, ...">${escapeHtml(contractTemplate?.content ?? '')}</textarea>
+      </div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -131,6 +136,7 @@ export async function openPortalContentEditor() {
       await Promise.all([
         savePortalContent('welcome_guide', document.getElementById('pc-welcome').value.trim() || null),
         savePortalContent('delivery_guide', document.getElementById('pc-delivery').value.trim() || null),
+        savePortalContent('contract_template', document.getElementById('pc-contract').value.trim() || null),
         saveFinSettings({ ...settings, portal_photo_path: newPhotoPath }),
       ]);
       closeModal();

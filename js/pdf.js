@@ -163,6 +163,90 @@ export function generateOffertePdf(offerte, settings) {
   });
 }
 
+export function generateAgreementCopyPdf(project, settings) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const marginX = 20;
+  let y = 22;
+
+  // ── header: bedrijfsgegevens ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(settings.bedrijfsnaam || 'SoenensMedia', marginX, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(90);
+  y += 6;
+  if (settings.bedrijfsadres) { doc.text(settings.bedrijfsadres, marginX, y); y += 4.5; }
+  if (settings.ondernemingsnummer) { doc.text(`Ondernemingsnr: ${settings.ondernemingsnummer}`, marginX, y); y += 4.5; }
+
+  // ── titel + datum rechtsboven ──
+  doc.setTextColor(20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('ONDERTEKENINGSBEWIJS', 190, 22, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(90);
+  const ry = 29;
+  doc.text(`Datum: ${fmtDateNL(project.agreement_signed_at)}`, 190, ry, { align: 'right' });
+
+  y = Math.max(y, ry + 5) + 10;
+  doc.setDrawColor(220);
+  doc.line(marginX, y, 190, y);
+  y += 10;
+
+  // ── project + ondertekenaar ──
+  doc.setTextColor(120);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('PROJECT', marginX, y);
+  y += 5;
+  doc.setTextColor(20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(project.title || '—', marginX, y);
+  y += 10;
+
+  doc.setTextColor(120);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('ONDERTEKEND DOOR', marginX, y);
+  y += 5;
+  doc.setTextColor(20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(project.agreement_signed_name || '—', marginX, y);
+  y += 12;
+
+  doc.setDrawColor(220);
+  doc.line(marginX, y, 190, y);
+  y += 10;
+
+  // ── contracttekst (of verwijzing naar bijgevoegd bestand) ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(30);
+  if (project.agreement_bestand_naam) {
+    doc.text(`Overeenkomst: zie bijgevoegd bestand "${project.agreement_bestand_naam}".`, marginX, y, { maxWidth: 170 });
+    y += 12;
+  } else if (project.agreement_content) {
+    const lines = doc.splitTextToSize(project.agreement_content, 170);
+    doc.text(lines, marginX, y);
+    y += lines.length * 4.6 + 8;
+  }
+
+  // ── footer ──
+  doc.setFontSize(8.5);
+  doc.setTextColor(120);
+  doc.text(
+    `Digitaal ondertekend via het ${settings.bedrijfsnaam || 'SoenensMedia'}-klantportaal op ${fmtDateNL(project.agreement_signed_at)} door ${project.agreement_signed_name || '—'}.`,
+    marginX, y, { maxWidth: 170 },
+  );
+
+  return doc;
+}
+
 export function downloadPdf(doc, filename) {
   doc.save(filename);
 }

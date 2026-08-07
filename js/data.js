@@ -304,6 +304,14 @@ export const uploadPortalPhoto = async (file) => {
   return path;
 };
 
+// Eigen foto per klant (overschrijft de algemene bedrijfsfoto in die klant se portaal).
+export const uploadClientPhoto = async (clientId, file) => {
+  const path = `client/${clientId}/${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(PORTAL_BRANDING_BUCKET).upload(path, file);
+  if (error) throw error;
+  return path;
+};
+
 // Publieke bucket: de publieke URL is meteen bruikbaar, geen signed url nodig.
 export const getPortalPhotoUrl = (path) => {
   if (!path) return null;

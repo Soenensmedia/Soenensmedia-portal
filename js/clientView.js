@@ -135,9 +135,10 @@ function renderClientList() {
   const count = state.clientProjects.length;
   const active = state.clientProjects.filter((p) => !CLIENT_DONE_STATUSES.includes(p.status));
   const done = state.clientProjects.filter((p) => CLIENT_DONE_STATUSES.includes(p.status));
+  const heroPhoto = state.clientProjects.map(clientPhotoUrlFor).find(Boolean) || state.portalPhotoUrl;
 
   container.innerHTML = `
-    ${state.portalPhotoUrl ? `<div class="client-portal-hero" style="background-image:url('${escapeAttr(state.portalPhotoUrl)}')"></div>` : ''}
+    ${heroPhoto ? `<div class="client-portal-hero" style="background-image:url('${escapeAttr(heroPhoto)}')"></div>` : ''}
     <div class="client-welcome">
       <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
@@ -159,7 +160,7 @@ function renderClientList() {
 
 function tileHtml(p) {
   const photos = state.clientPhotosByProject[p.id] || [];
-  const cover = photos[0]?.url || state.portalPhotoUrl;
+  const cover = photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   return `
     <div class="client-project-tile" data-id="${p.id}">
       <div class="tile-cover" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
@@ -365,8 +366,18 @@ function statusHintHtml(status) {
   return hint ? `<div class="client-status-hint">${escapeHtml(hint)}</div>` : '';
 }
 
+function linkedClientRecord(p) {
+  return p?.client_id ? state.clientOwnRecords.find((c) => c.id === p.client_id) : null;
+}
+
+// Eigen foto van de klant heeft voorrang op de algemene bedrijfsfoto.
+function clientPhotoUrlFor(p) {
+  const record = linkedClientRecord(p);
+  return record?.photo_path ? getPortalPhotoUrl(record.photo_path) : null;
+}
+
 function retainerHtml(p) {
-  const record = p.client_id ? state.clientOwnRecords.find((c) => c.id === p.client_id) : null;
+  const record = linkedClientRecord(p);
   if (!record?.is_retainer) return '';
   const geleverd = record.retainer_videos_geleverd_dit_jaar ?? 0;
   const doel = record.retainer_videos_doel_per_jaar;
@@ -511,7 +522,7 @@ function feedbackTabHtml(generalFeedback) {
 }
 
 function projectDetailHtml(p, feedback, photos, concepts) {
-  const cover = photos[0]?.url || state.portalPhotoUrl;
+  const cover = photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
   const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
   const generalFeedback = feedback.filter((f) => !f.concept_id);

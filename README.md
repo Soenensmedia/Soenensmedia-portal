@@ -420,3 +420,15 @@ Voer [`sql/022_status_changed_at.sql`](sql/022_status_changed_at.sql) uit in de 
 ### Kanttekening
 
 De "Nieuwe update"-badge onthoudt "gezien" lokaal in de browser van de klant (geen extra tabel nodig) — bekijkt een klant het portaal op een ander toestel/browser, dan kan de badge daar opnieuw even verschijnen. Geen probleem voor de werking, gewoon iets om te weten.
+
+## Fase 17 — Eigen foto per klant (nieuw)
+
+De bedrijfsfoto (Fase 14) was universeel: elke klant zag dezelfde foto. Je kan nu per klant een eigen foto instellen — die heeft voorrang op de algemene bedrijfsfoto, overal waar die getoond wordt (welkomstscherm, projecttegel, projectdetail).
+
+- Ga naar **Klanten**, open een klant (of maak een nieuwe aan), en upload een foto bij het veld **"Foto"** bovenaan het formulier.
+- Heeft die klant geen eigen foto? Dan blijft de algemene bedrijfsfoto gewoon zichtbaar — niets verandert voor klanten zonder eigen foto.
+- Heeft een project zelf al foto's (via de Foto's-tab)? Dan blijft dat uiteraard voorrang houden — de klantfoto is enkel een fallback zolang er nog geen projectfoto's zijn.
+
+### Eenmalig instellen
+
+Voer [`sql/023_client_photo.sql`](sql/023_client_photo.sql) uit in de SQL Editor.

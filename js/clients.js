@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { fetchClients, createClient, updateClient, deleteClient, fetchPortalContent, savePortalContent, fetchFinSettings, saveFinSettings, uploadPortalPhoto, deletePortalPhoto, getPortalPhotoUrl } from './data.js';
+import { fetchClients, createClient, updateClient, deleteClient, fetchPortalContent, savePortalContent, fetchFinSettings, saveFinSettings, uploadPortalPhoto, deletePortalPhoto, getPortalPhotoUrl, uploadClientPhoto } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
@@ -148,10 +148,24 @@ export async function openPortalContentEditor() {
 }
 
 export function openClientForm(client = null) {
+  const photoUrl = getPortalPhotoUrl(client?.photo_path ?? null);
+  let removePhoto = false;
+
   openModal(`
     <div class="modal-header"><h2>${client ? 'Klant bewerken' : 'Klant toevoegen'}</h2></div>
     <form id="client-form">
       <div class="field"><label>Naam</label><input type="text" id="cl-naam" value="${escapeAttr(client?.naam ?? '')}" required></div>
+      <div class="field">
+        <label>Foto (klant ziet dit i.p.v. de algemene bedrijfsfoto)</label>
+        <div id="cl-photo-preview-wrap">
+          ${photoUrl ? `
+            <div class="portal-photo-preview">
+              <img src="${escapeAttr(photoUrl)}" alt="">
+              <button type="button" class="btn btn-ghost btn-small" id="cl-photo-remove">Verwijderen</button>
+            </div>` : ''}
+        </div>
+        <input type="file" id="cl-photo-input" accept="image/*">
+      </div>
       <div class="field-row">
         <div class="field"><label>E-mail</label><input type="email" id="cl-email" value="${escapeAttr(client?.email ?? '')}"></div>
         <div class="field"><label>Telefoon</label><input type="text" id="cl-telefoon" value="${escapeAttr(client?.telefoon ?? '')}"></div>
@@ -190,6 +204,11 @@ export function openClientForm(client = null) {
   document.getElementById('cl-is-retainer').addEventListener('change', (e) => {
     document.getElementById('cl-retainer-fields').classList.toggle('hidden', !e.target.checked);
   });
+  document.getElementById('cl-photo-remove')?.addEventListener('click', () => {
+    removePhoto = true;
+    document.getElementById('cl-photo-preview-wrap').innerHTML = '';
+    showToast('Foto wordt verwijderd bij opslaan');
+  });
 
   document.getElementById('cl-delete')?.addEventListener('click', async () => {
     if (!confirm(`"${client.naam}" verwijderen? Gekoppelde opdrachten blijven bestaan maar verliezen de klantkoppeling.`)) return;
@@ -220,14 +239,24 @@ export function openClientForm(client = null) {
       notities: document.getElementById('cl-notities').value.trim() || null,
     };
     try {
+      let saved = client ? await updateClient(client.id, payload) : await createClient(payload);
+
+      const file = document.getElementById('cl-photo-input').files[0];
+      if (file) {
+        const path = await uploadClientPhoto(saved.id, file);
+        if (client?.photo_path) await deletePortalPhoto(client.photo_path).catch(() => {});
+        saved = await updateClient(saved.id, { photo_path: path });
+      } else if (removePhoto && client?.photo_path) {
+        await deletePortalPhoto(client.photo_path).catch(() => {});
+        saved = await updateClient(saved.id, { photo_path: null });
+      }
+
       if (client) {
-        const updated = await updateClient(client.id, payload);
         const idx = state.clients.findIndex((x) => x.id === client.id);
-        state.clients[idx] = updated;
+        state.clients[idx] = saved;
         showToast('Klant bijgewerkt');
       } else {
-        const created = await createClient(payload);
-        state.clients.push(created);
+        state.clients.push(saved);
         state.clients.sort((a, b) => a.naam.localeCompare(b.naam));
         showToast('Klant toegevoegd');
       }

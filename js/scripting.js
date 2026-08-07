@@ -1,6 +1,6 @@
-import { state, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS } from './state.js';
+import { state, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, parseScriptScenes, serializeScriptScenes, renderConceptContentHtml } from './util.js';
-import { fetchProjectConcepts, createConcept, updateConcept, deleteConcept } from './data.js';
+import { fetchProjectConcepts, createConcept, updateConcept, deleteConcept, fetchProjectFeedback } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
 
@@ -65,16 +65,19 @@ async function refreshScriptingList() {
   if (!container || !projectId) return;
   container.innerHTML = '<div class="empty-note">Laden...</div>';
 
-  let concepts;
+  let concepts, feedback;
   try {
-    concepts = await fetchProjectConcepts(projectId);
+    [concepts, feedback] = await Promise.all([
+      fetchProjectConcepts(projectId),
+      fetchProjectFeedback(projectId),
+    ]);
   } catch (err) {
     container.innerHTML = `<div class="empty-note">Kon ideeën/scripts niet laden: ${escapeHtml(err.message)}</div>`;
     return;
   }
 
   container.innerHTML = concepts.length
-    ? `<div class="concept-list">${concepts.map(scriptingCardHtml).join('')}</div>`
+    ? `<div class="concept-list">${concepts.map((c) => scriptingCardHtml(c, feedback.filter((f) => f.concept_id === c.id))).join('')}</div>`
     : '<div class="empty-note">Nog geen ideeën of scripts voor deze opdracht.</div>';
 
   container.querySelectorAll('.concept-edit').forEach((btn) => {
@@ -96,7 +99,7 @@ async function refreshScriptingList() {
   });
 }
 
-function scriptingCardHtml(c) {
+function scriptingCardHtml(c, conceptFeedback = []) {
   return `
     <div class="concept-card" data-id="${c.id}">
       <div class="concept-card-header">
@@ -105,6 +108,12 @@ function scriptingCardHtml(c) {
       </div>
       <div class="concept-card-title">${escapeHtml(c.title)}</div>
       ${renderConceptContentHtml(c.content)}
+      <div class="concept-feedback">
+        <div class="empty-note" style="margin-bottom:6px;">Feedback van klant</div>
+        ${conceptFeedback.length
+          ? conceptFeedback.map((f) => `<div class="detail-list-item"><span>${escapeHtml(f.message)}</span><span>${fmtDate(new Date(f.created_at))}</span></div>`).join('')
+          : '<div class="empty-note">Nog geen feedback op dit item.</div>'}
+      </div>
       <div class="concept-row-actions">
         <button type="button" class="btn btn-ghost btn-small concept-edit" data-id="${c.id}">Bewerken</button>
         <button type="button" class="btn btn-ghost btn-small concept-delete" data-id="${c.id}">Verwijderen</button>

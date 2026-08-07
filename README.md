@@ -405,3 +405,18 @@ Deze migratie bevat ook een **bugfix**: sinds Fase 13 kon een klant een geüploa
 ### Beveiliging
 
 Geüploade contracten staan in een privé bucket; enkel jij (admin) kan uploaden/verwijderen, en een klant kan enkel het contract van zijn **eigen** gekoppelde project bekijken — nooit dat van een ander project (zelfde `project_id`-scoping als foto's en offertes/facturen).
+
+## Fase 16 — Statusmelding, contract als pop-up + eigen tab, scripting-feedback-fix (nieuw)
+
+- **"Nieuwe update"-badge**: verandert de status van een project (bv. van "Wacht op feedback" naar "Revisie"), dan ziet de klant meteen een rode "Nieuwe update"-badge op de projecttegel in zijn overzicht — verdwijnt zodra die het project opent. Dit werkt automatisch, bovenop de bestaande e-mailmelding bij statuswijziging (Fase 5) — check gerust nog even of die e-mail (Brevo Edge Function) bij jou al werkt, want dat blijft de "echte" melding buiten het portaal.
+- **Contract als verplichte pop-up**: was er nog een niet-ondertekend contract, dan opende het portaal voorheen een aparte pagina die alles blokkeerde. Nu ziet de klant meteen het volledige project (tabs, foto's, ...) met daar bovenop een **niet-wegklikbare pop-up** die vraagt om eerst te tekenen — geen escape-toets of klik ernaast helpt, enkel effectief tekenen sluit hem.
+- **Eigen "Contract"-tab**: naast "Feedback" is er nu een aparte **Contract**-tab die, ook ná ondertekening, altijd toont wat er getekend is (tekst of geüpload bestand), door wie en wanneer, plus de "Download kopie"-knop. Zo kan de klant het contract altijd terugvinden, in plaats van dat het na het tekenen uit beeld verdwijnt.
+- **Bugfix — feedback op ideeën/scripts onzichtbaar voor jou**: als een klant feedback gaf op een specifiek idee/script, kwam die nergens terug in de admin Scripting-tab (enkel de klant zag het). Elk idee/script toont daar nu ook de bijhorende klant-feedback.
+
+### Eenmalig instellen
+
+Voer [`sql/022_status_changed_at.sql`](sql/022_status_changed_at.sql) uit in de SQL Editor.
+
+### Kanttekening
+
+De "Nieuwe update"-badge onthoudt "gezien" lokaal in de browser van de klant (geen extra tabel nodig) — bekijkt een klant het portaal op een ander toestel/browser, dan kan de badge daar opnieuw even verschijnen. Geen probleem voor de werking, gewoon iets om te weten.

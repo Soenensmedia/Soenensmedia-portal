@@ -94,6 +94,25 @@ function firstNameOf(profile) {
 
 const CLIENT_DONE_STATUSES = ['verzonden', 'afgerond'];
 
+// "Nieuwe update"-badge: lokaal per browser bijgehouden (geen extra tabel nodig).
+// Bij het openen van een project wordt de laatst geziene statuswijziging onthouden.
+function statusSeenKey(projectId) {
+  return `sm_status_seen_${projectId}`;
+}
+function hasUnseenStatusChange(p) {
+  if (!p.status_changed_at) return false;
+  try {
+    const seen = localStorage.getItem(statusSeenKey(p.id));
+    return !seen || new Date(p.status_changed_at) > new Date(seen);
+  } catch {
+    return false;
+  }
+}
+function markStatusSeen(p) {
+  if (!p.status_changed_at) return;
+  try { localStorage.setItem(statusSeenKey(p.id), p.status_changed_at); } catch {}
+}
+
 function contactCardHtml() {
   const email = state.clientFinSettings?.contact_email;
   const tel = state.clientFinSettings?.contact_telefoon;
@@ -145,6 +164,7 @@ function tileHtml(p) {
     <div class="client-project-tile" data-id="${p.id}">
       <div class="tile-cover" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
         ${!cover ? '<span class="tile-cover-placeholder">SM</span>' : ''}
+        ${hasUnseenStatusChange(p) ? '<span class="tile-badge-new">Nieuwe update</span>' : ''}
       </div>
       <div class="tile-info">
         <div class="tile-title">${escapeHtml(p.title)}</div>
@@ -164,19 +184,9 @@ function renderClientProjectDetail(projectId) {
     return;
   }
 
+  markStatusSeen(p);
+
   const container = document.getElementById('client-projects-container');
-  const needsSigning = (p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at;
-
-  if (needsSigning) {
-    container.innerHTML = `
-      <button type="button" class="btn btn-ghost btn-small client-back-btn" id="client-back-btn">‹ Terug naar projecten</button>
-      ${agreementGateHtml(p)}
-    `;
-    document.getElementById('client-back-btn').addEventListener('click', renderClientList);
-    wireAgreementForm(p);
-    return;
-  }
-
   const feedback = state.clientFeedbackByProject[p.id] || [];
   const photos = state.clientPhotosByProject[p.id] || [];
   const concepts = state.clientConceptsByProject[p.id] || [];
@@ -189,40 +199,47 @@ function renderClientProjectDetail(projectId) {
   document.getElementById('client-back-btn').addEventListener('click', renderClientList);
   wireProjectDetailEvents(p, photos, feedback, concepts);
   applyMosaicLayout(container);
+
+  const needsSigning = (p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at;
+  if (needsSigning) {
+    openAgreementSignModal(p);
+  }
 }
 
-function agreementGateHtml(p) {
+function wireAgreementViewFileButtons(root) {
+  root.querySelectorAll('.agreement-view-file-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        window.open(await getAgreementFileUrl(btn.dataset.path), '_blank');
+      } catch (err) {
+        showToast('Kon contract niet openen: ' + err.message, true);
+      }
+    });
+  });
+}
+
+function agreementModalHtml(p) {
   return `
-    <div class="client-project-card">
-      <div class="client-hero" ${state.portalPhotoUrl ? `style="background-image:url('${escapeAttr(state.portalPhotoUrl)}')"` : ''}>
-        ${!state.portalPhotoUrl ? '<div class="client-hero-placeholder">SM</div>' : ''}
-      </div>
-      ${state.portalWelcomeGuide ? `
-        <div class="detail-section" style="border-top:none; padding-top:0;">
-          <h3>Welkom</h3>
-          <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
-        </div>` : ''}
-      <div class="client-project-header">
-        <div><div class="title">${escapeHtml(p.title)}</div></div>
-      </div>
-      <div class="detail-section">
-        <h3>Overeenkomst</h3>
-        ${p.agreement_bestand_naam
-          ? `<button type="button" class="btn btn-ghost btn-small" id="agreement-view-file-${p.id}">📄 Bekijk contract (${escapeHtml(p.agreement_bestand_naam)})</button>`
-          : `<p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>`}
-        <form id="agreement-form-${p.id}" style="margin-top:14px;">
-          <div class="field"><label>Volledige naam</label><input type="text" id="agreement-name-${p.id}" required placeholder="Je naam"></div>
-          <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); margin-bottom:14px;">
-            <input type="checkbox" id="agreement-agree-${p.id}" style="width:auto;" required>
-            Ik ga akkoord met bovenstaande overeenkomst
-          </label>
-          <button type="submit" class="btn btn-red">Ondertekenen</button>
-        </form>
-      </div>
-    </div>`;
+    <div class="modal-header"><h2>Contract ondertekenen</h2></div>
+    <div class="empty-note" style="margin-bottom:14px;">Je moet dit contract eerst ondertekenen voor je verder kan met "${escapeHtml(p.title)}".</div>
+    ${p.agreement_bestand_naam
+      ? `<button type="button" class="btn btn-ghost btn-small agreement-view-file-btn" data-path="${escapeAttr(p.agreement_bestand_path)}">📄 Bekijk contract (${escapeHtml(p.agreement_bestand_naam)})</button>`
+      : `<p class="client-brief-text" style="max-height:240px; overflow-y:auto;">${escapeHtml(p.agreement_content)}</p>`}
+    <form id="agreement-form-${p.id}" style="margin-top:14px;">
+      <div class="field"><label>Volledige naam</label><input type="text" id="agreement-name-${p.id}" required placeholder="Je naam"></div>
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); margin-bottom:14px;">
+        <input type="checkbox" id="agreement-agree-${p.id}" style="width:auto;" required>
+        Ik ga akkoord met bovenstaande overeenkomst
+      </label>
+      <button type="submit" class="btn btn-red">Ondertekenen</button>
+    </form>
+  `;
 }
 
-function wireAgreementForm(p) {
+function openAgreementSignModal(p) {
+  openModal(agreementModalHtml(p), { dismissible: false });
+  wireAgreementViewFileButtons(document.getElementById('modal-root'));
+
   const form = document.getElementById(`agreement-form-${p.id}`);
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -231,18 +248,11 @@ function wireAgreementForm(p) {
     try {
       await signAgreement(p.id, name);
       state.clientProjects = await fetchProjects();
+      closeModal();
       showToast('Overeenkomst ondertekend');
       renderClientProjectDetail(p.id);
     } catch (err) {
       showToast(err.message, true);
-    }
-  });
-
-  document.getElementById(`agreement-view-file-${p.id}`)?.addEventListener('click', async () => {
-    try {
-      window.open(await getAgreementFileUrl(p.agreement_bestand_path), '_blank');
-    } catch (err) {
-      showToast('Kon contract niet openen: ' + err.message, true);
     }
   });
 }
@@ -395,6 +405,7 @@ const CLIENT_DETAIL_TABS = [
   { key: 'ideeen', label: 'Ideeën & Scripts' },
   { key: 'media', label: "Foto's & Video" },
   { key: 'financien', label: 'Offertes & Facturen' },
+  { key: 'contract', label: 'Contract' },
   { key: 'feedback', label: 'Feedback' },
 ];
 
@@ -477,6 +488,17 @@ function financeTabHtml(offertes, facturen) {
     }).join('')}`;
 }
 
+function contractTabHtml(p) {
+  return `
+    ${p.agreement_bestand_naam
+      ? `<button type="button" class="btn btn-ghost btn-small agreement-view-file-btn" data-path="${escapeAttr(p.agreement_bestand_path)}">📄 Bekijk contract (${escapeHtml(p.agreement_bestand_naam)})</button>`
+      : (p.agreement_content ? `<p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>` : '<div class="client-empty-state">Nog geen contract toegevoegd.</div>')}
+    ${p.agreement_signed_at
+      ? `<div class="empty-note" style="margin-top:14px;">Ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.</div>
+         <button type="button" class="btn btn-ghost btn-small agreement-copy-btn" data-id="${p.id}">Download kopie</button>`
+      : ''}`;
+}
+
 function feedbackTabHtml(generalFeedback) {
   return `
     ${generalFeedback.length
@@ -501,7 +523,11 @@ function projectDetailHtml(p, feedback, photos, concepts) {
     feedback: generalFeedback.length,
   };
 
-  const visibleTabs = CLIENT_DETAIL_TABS.filter((t) => t.key !== 'financien' || tabCounts.financien > 0);
+  const visibleTabs = CLIENT_DETAIL_TABS.filter((t) => {
+    if (t.key === 'financien') return tabCounts.financien > 0;
+    if (t.key === 'contract') return !!(p.agreement_content || p.agreement_bestand_path);
+    return true;
+  });
   const activeTab = visibleTabs.some((t) => t.key === state.activeClientDetailTab) ? state.activeClientDetailTab : 'overzicht';
 
   return `
@@ -520,12 +546,6 @@ function projectDetailHtml(p, feedback, photos, concepts) {
           : `<button class="btn btn-red btn-small" id="approve-btn-${p.id}">Goedkeuren</button>`}
       </div>
 
-      ${(p.agreement_content || p.agreement_bestand_path) && p.agreement_signed_at
-        ? `<div class="empty-note">Overeenkomst ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.
-            <button type="button" class="btn btn-ghost btn-small agreement-copy-btn" data-id="${p.id}">Download kopie</button>
-          </div>`
-        : ''}
-
       ${statusStepperHtml(p.status)}
       ${statusHintHtml(p.status)}
 
@@ -539,6 +559,7 @@ function projectDetailHtml(p, feedback, photos, concepts) {
         ${activeTab === 'ideeen' ? ideeenTabHtml(concepts, feedback) : ''}
         ${activeTab === 'media' ? mediaTabHtml(p, photos) : ''}
         ${activeTab === 'financien' ? financeTabHtml(offertes, facturen) : ''}
+        ${activeTab === 'contract' ? contractTabHtml(p) : ''}
         ${activeTab === 'feedback' ? feedbackTabHtml(generalFeedback) : ''}
       </div>
     </div>`;
@@ -556,6 +577,8 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
   document.querySelectorAll('.client-download-doc').forEach((btn) => {
     btn.addEventListener('click', () => handleClientDownload(btn.dataset.kind, btn.dataset.id));
   });
+
+  wireAgreementViewFileButtons(document.getElementById('client-projects-container'));
 
   document.querySelector('.agreement-copy-btn')?.addEventListener('click', () => {
     try {

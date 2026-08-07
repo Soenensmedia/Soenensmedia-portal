@@ -409,10 +409,15 @@ table.log-table tr:last-child td { border-bottom: none; }
 }
 .client-project-tile:hover { border-color: #333; }
 .tile-cover {
-  aspect-ratio: 16/10; background: var(--paneld) center/cover no-repeat;
+  position: relative; aspect-ratio: 16/10; background: var(--paneld) center/cover no-repeat;
   display: flex; align-items: center; justify-content: center;
 }
 .tile-cover-placeholder { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--text-faint); letter-spacing: .1em; }
+.tile-badge-new {
+  position: absolute; top: 8px; right: 8px; background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+  padding: 3px 8px; border-radius: 20px;
+}
 .tile-info { padding: 12px 14px; }
 .tile-title { font-size: 14px; color: #fff; font-weight: 500; }
 .tile-status { font-size: 11px; color: var(--text-dim); margin-top: 2px; }

@@ -180,6 +180,7 @@ export function openProjectDetail(id) {
       agreement_content: document.getElementById('pd-agreement').value.trim() || null,
     };
     const statusChanged = payload.status !== p.status;
+    if (statusChanged) payload.status_changed_at = new Date().toISOString();
     try {
       const updated = await updateProject(id, payload);
       const idx = state.projects.findIndex((x) => x.id === id);

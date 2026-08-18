@@ -133,6 +133,21 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .view-header h1 { font-size: 1.8rem; color: #fff; }
 
 /* ══════════ DASHBOARD ══════════ */
+/* ══════════ DASHBOARD: AANDACHT NODIG ══════════ */
+.attention-panel {
+  background: linear-gradient(135deg, #1a0d0d, var(--panel));
+  border: 1px solid #2a1414; border-radius: 8px; padding: 14px 18px; margin-bottom: 18px;
+}
+.attention-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--red); font-weight: 600; margin-bottom: 8px; }
+.attention-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 8px 0; border-bottom: 1px solid #201212; cursor: pointer;
+}
+.attention-row:last-child { border-bottom: none; padding-bottom: 0; }
+.attention-project { font-size: 13px; color: #fff; }
+.attention-client { font-size: 12px; color: var(--text-dim); font-weight: 400; }
+.attention-reason { font-size: 11.5px; color: #e0a835; white-space: nowrap; }
+
 .kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
 .kanban-col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 80px; transition: background .12s, border-color .12s; }
 .kanban-col.drag-over { background: #1a1010; border-color: var(--red); }

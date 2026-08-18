@@ -443,3 +443,14 @@ Dezelfde opruiming als Fase 16 bij de klant, nu aan jouw kant: het opdracht-deta
 - **Activiteit** — Agenda-items + Uren.
 
 "Verwijderen / Sluiten / Opslaan" blijft altijd onderaan zichtbaar, ongeacht welk tabblad open staat — dus je kan op elk tabblad wijzigen en gewoon opslaan zonder terug te moeten naar "Opdracht". Geen enkel veld of knop is verdwenen, puur een andere indeling. Geen nieuwe SQL nodig.
+
+## Fase 19 — Klant-feedback zichtbaar + "Aandacht nodig"-overzicht (nieuw)
+
+Twee echte gaten gedicht: feedback die de klant achterliet kwam nergens toe bij jou, en je had geen overzicht van wat er per project nog moest gebeuren.
+
+- **Feedback lezen & beantwoorden**: de tab "Activiteit & Feedback" in het opdrachtvenster toont nu het volledige feedback-draadje van de klant (algemene feedback — feedback op een specifiek idee/script blijft zichtbaar in de Scripting-tab, zoals al gefixt in Fase 16) én een antwoordveld om rechtstreeks te reageren.
+- **"Aandacht nodig"-paneel** bovenaan het Dashboard: toont elk project waar de klant het laatste woord had in een feedback-draadje (dus wacht op jouw antwoord), of waar een contract klaarstaat maar nog niet ondertekend is. Klik op een rij om meteen naar dat project te springen. Staat er niets open, dan verschijnt het paneel gewoon niet.
+
+### Eenmalig instellen
+
+Geen nieuwe SQL — `project_feedback` liet admin al lezen/schrijven sinds Fase 2, dit gebruikt enkel bestaande rechten.

@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -23,7 +23,7 @@ export function openProjectDetail(id) {
         <button type="button" class="client-tab-btn active" data-pdtab="opdracht">Opdracht</button>
         <button type="button" class="client-tab-btn" data-pdtab="klant">Klant & Contract</button>
         <button type="button" class="client-tab-btn" data-pdtab="media">Media & Archief</button>
-        <button type="button" class="client-tab-btn" data-pdtab="activiteit">Activiteit</button>
+        <button type="button" class="client-tab-btn" data-pdtab="activiteit">Activiteit & Feedback</button>
       </div>
 
       <div class="pd-tab-panel" data-pdpanel="opdracht">
@@ -122,6 +122,15 @@ export function openProjectDetail(id) {
 
       <div class="pd-tab-panel hidden" data-pdpanel="activiteit">
         <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Feedback van klant</h3>
+          <div id="pd-feedback-list"><div class="empty-note">Laden...</div></div>
+          <form id="pd-feedback-form" class="feedback-form">
+            <input type="text" id="pd-feedback-input" placeholder="Antwoord aan de klant...">
+            <button type="submit" class="btn btn-red btn-small">Versturen</button>
+          </form>
+        </div>
+
+        <div class="detail-section">
           <h3>Agenda-items (${linkedEvents.length})</h3>
           ${linkedEvents.length
             ? linkedEvents.map((e) => `<div class="detail-list-item"><span>${escapeHtml(e.title)}</span><span>${fmtDateShort(new Date(e.start_time))}</span></div>`).join('')
@@ -226,6 +235,22 @@ export function openProjectDetail(id) {
   });
 
   refreshPhotoGrid(id);
+  refreshFeedbackList(id);
+
+  document.getElementById('pd-feedback-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('pd-feedback-input');
+    const message = input.value.trim();
+    if (!message) return;
+    try {
+      const created = await createFeedback(id, message);
+      state.allFeedback.push(created);
+      input.value = '';
+      refreshFeedbackList(id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
 
   document.getElementById('pd-photo-upload').addEventListener('click', async () => {
     const input = document.getElementById('pd-photo-input');
@@ -349,6 +374,29 @@ async function refreshPhotoGrid(projectId) {
   } catch (err) {
     if (grid.isConnected) {
       grid.innerHTML = `<div class="empty-note">Kon foto's niet laden: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+async function refreshFeedbackList(projectId) {
+  const list = document.getElementById('pd-feedback-list');
+  if (!list) return;
+  try {
+    const feedback = await fetchProjectFeedback(projectId);
+    if (!list.isConnected) return;
+    const general = feedback.filter((f) => !f.concept_id);
+    const p = projectById(projectId);
+    list.innerHTML = general.length
+      ? general.map((f) => `
+        <div class="detail-list-item">
+          <span><strong>${f.author_user_id === p?.client_user_id ? 'Klant' : 'Jij'}:</strong> ${escapeHtml(f.message)}</span>
+          <span>${fmtDate(new Date(f.created_at))}</span>
+        </div>`).join('')
+      : '<div class="empty-note">Nog geen feedback op deze opdracht.</div>';
+    state.allFeedback = state.allFeedback.filter((f) => f.project_id !== projectId).concat(feedback);
+  } catch (err) {
+    if (list.isConnected) {
+      list.innerHTML = `<div class="empty-note">Kon feedback niet laden: ${escapeHtml(err.message)}</div>`;
     }
   }
 }

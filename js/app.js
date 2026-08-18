@@ -1,6 +1,6 @@
 import { signIn, signOut, onAuthChange } from './auth.js';
 import { state } from './state.js';
-import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients } from './data.js';
+import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
@@ -97,6 +97,11 @@ async function showAppShell() {
     state.clients = clients;
   } catch (err) {
     showToast('Kon data niet laden: ' + err.message, true);
+  }
+  try {
+    state.allFeedback = await fetchAllFeedback();
+  } catch {
+    state.allFeedback = [];
   }
   switchView('dashboard');
 }

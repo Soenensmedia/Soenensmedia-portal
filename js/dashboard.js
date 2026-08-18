@@ -5,7 +5,51 @@ import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
 
+function attentionItems() {
+  const items = [];
+  state.projects.forEach((p) => {
+    if (p.status === 'afgerond') return;
+
+    if (p.client_user_id) {
+      const thread = state.allFeedback
+        .filter((f) => f.project_id === p.id)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const last = thread[thread.length - 1];
+      if (last && last.author_user_id === p.client_user_id) {
+        items.push({ project: p, reason: 'Wacht op jouw antwoord' });
+      }
+    }
+
+    if ((p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at) {
+      items.push({ project: p, reason: 'Contract nog niet ondertekend door klant' });
+    }
+  });
+  return items;
+}
+
+function attentionHtml() {
+  const items = attentionItems();
+  if (!items.length) return '';
+  return `
+    <div class="attention-panel">
+      <div class="attention-title">Aandacht nodig (${items.length})</div>
+      ${items.map((it) => `
+        <div class="attention-row" data-id="${it.project.id}">
+          <span class="attention-project">${escapeHtml(it.project.title)} <span class="attention-client">— ${escapeHtml(it.project.client_name)}</span></span>
+          <span class="attention-reason">${escapeHtml(it.reason)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
 export function renderDashboard() {
+  const attentionContainer = document.getElementById('attention-container');
+  if (attentionContainer) {
+    attentionContainer.innerHTML = attentionHtml();
+    attentionContainer.querySelectorAll('.attention-row').forEach((el) => {
+      el.addEventListener('click', () => openProjectDetail(el.dataset.id));
+    });
+  }
+
   const container = document.getElementById('kanban-container');
   container.innerHTML = STATUS_ORDER.map((status) => {
     const projects = state.projects.filter((p) => p.status === status);

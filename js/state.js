@@ -35,6 +35,7 @@ export const state = {
   timeEntries: [],
   clients: [],
   feedback: [],
+  allFeedback: [],
   currentView: 'dashboard',
   weekStart: startOfWeek(new Date()),
   activeProjectId: null,

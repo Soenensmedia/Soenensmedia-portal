@@ -69,6 +69,10 @@ export const fetchProjectFeedback = (projectId) =>
 export const createFeedback = (projectId, message, conceptId = null) =>
   sb.from('project_feedback').insert({ project_id: projectId, message, concept_id: conceptId }).select().single().then(unwrap);
 
+// Enkel voor admin: alle feedback in 1 keer, voor het "aandacht nodig"-overzicht.
+export const fetchAllFeedback = () =>
+  sb.from('project_feedback').select('*').order('created_at').then(unwrap);
+
 // ── video-ideeën & scripts ──────────────────────────────
 export const fetchProjectConcepts = (projectId) =>
   sb.from('project_concepts').select('*').eq('project_id', projectId).order('created_at').then(unwrap);

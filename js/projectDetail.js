@@ -19,21 +19,123 @@ export function openProjectDetail(id) {
   openModal(`
     <div class="modal-header"><h2>Opdracht</h2></div>
     <form id="pd-form">
-      <div class="field"><label>Klant</label><input type="text" id="pd-client" value="${escapeAttr(p.client_name)}" required></div>
-      <div class="field"><label>Titel</label><input type="text" id="pd-title" value="${escapeAttr(p.title)}" required></div>
-      <div class="field-row">
-        <div class="field"><label>Status</label>
-          <select id="pd-status">${STATUS_ORDER.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('')}</select>
+      <div class="client-tabs" id="pd-tabs" style="margin-top:0;">
+        <button type="button" class="client-tab-btn active" data-pdtab="opdracht">Opdracht</button>
+        <button type="button" class="client-tab-btn" data-pdtab="klant">Klant & Contract</button>
+        <button type="button" class="client-tab-btn" data-pdtab="media">Media & Archief</button>
+        <button type="button" class="client-tab-btn" data-pdtab="activiteit">Activiteit</button>
+      </div>
+
+      <div class="pd-tab-panel" data-pdpanel="opdracht">
+        <div class="field"><label>Klant</label><input type="text" id="pd-client" value="${escapeAttr(p.client_name)}" required></div>
+        <div class="field"><label>Titel</label><input type="text" id="pd-title" value="${escapeAttr(p.title)}" required></div>
+        <div class="field-row">
+          <div class="field"><label>Status</label>
+            <select id="pd-status">${STATUS_ORDER.map((s) => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>Deadline</label><input type="date" id="pd-deadline" value="${p.deadline ?? ''}"></div>
         </div>
-        <div class="field"><label>Deadline</label><input type="date" id="pd-deadline" value="${p.deadline ?? ''}"></div>
+        <div class="field"><label>Notities</label><textarea id="pd-notes" rows="3">${escapeHtml(p.notes ?? '')}</textarea></div>
+        <div class="field"><label>Klant (uit klantenlijst)</label>
+          <select id="pd-client-id">
+            <option value="">— Geen —</option>
+            ${state.clients.map((c) => `<option value="${c.id}" ${p.client_id === c.id ? 'selected' : ''}>${escapeHtml(c.naam)}</option>`).join('')}
+          </select>
+        </div>
       </div>
-      <div class="field"><label>Notities</label><textarea id="pd-notes" rows="3">${escapeHtml(p.notes ?? '')}</textarea></div>
-      <div class="field"><label>Klant (uit klantenlijst)</label>
-        <select id="pd-client-id">
-          <option value="">— Geen —</option>
-          ${state.clients.map((c) => `<option value="${c.id}" ${p.client_id === c.id ? 'selected' : ''}>${escapeHtml(c.naam)}</option>`).join('')}
-        </select>
+
+      <div class="pd-tab-panel hidden" data-pdpanel="klant">
+        <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Klantenportaal</h3>
+          <div class="field"><label>Frame.io link</label><input type="url" id="pd-frame-url" value="${escapeAttr(p.frame_io_url ?? '')}" placeholder="https://..."></div>
+          <div class="field">
+            <label style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" id="pd-frame-is-folder" style="width:auto;" ${p.frame_io_is_folder ? 'checked' : ''}>
+              Dit is een map met meerdere items (geen preview mogelijk — toont enkel een knop)
+            </label>
+          </div>
+          <div class="field">
+            <label>Klant koppelen (e-mail van hun portaal-account)</label>
+            <div class="field-row">
+              <input type="email" id="pd-client-email" placeholder="klant@bedrijf.be">
+              <button type="button" class="btn btn-ghost btn-small" id="pd-link-client">Koppelen</button>
+            </div>
+          </div>
+          <div class="empty-note">
+            ${p.client_user_id ? 'Klant is gekoppeld aan dit project.' : 'Nog geen klant gekoppeld — de klant moet eerst zelf een account aanmaken.'}
+            ${p.client_approved ? ` Goedgekeurd door klant op ${fmtDate(new Date(p.client_approved_at))}.` : ''}
+          </div>
+          <div class="field"><label>Briefing / omschrijving voor klant</label><textarea id="pd-client-brief" rows="3" placeholder="Korte uitleg over het project, wat er is afgesproken...">${escapeHtml(p.client_brief ?? '')}</textarea></div>
+          <div class="field"><label>Deliverables</label><textarea id="pd-deliverables" rows="2" placeholder="Bv. 20 foto's, 1 video van 2 minuten">${escapeHtml(p.deliverables ?? '')}</textarea></div>
+          <button type="button" class="btn btn-ghost btn-small" id="pd-open-scripting">→ Ideeën & Scripts voor dit project</button>
+        </div>
+
+        <div class="detail-section">
+          <h3>Overeenkomst (optioneel)</h3>
+          <div class="empty-note">Leeg = geen overeenkomst nodig, klant ziet meteen de rest van het project. Ingevuld (tekst of bestand) = klant moet eerst tekenen voor die verder mag.</div>
+          <div class="field-row" style="margin-bottom:10px;">
+            <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-template">Gebruik standaardcontract</button>
+          </div>
+          <div class="field"><label>Tekst van de overeenkomst</label><textarea id="pd-agreement" rows="6" placeholder="Voorwaarden, prijsafspraak, gebruiksrechten, ...">${escapeHtml(p.agreement_content ?? '')}</textarea></div>
+          <div class="field">
+            <label>Eigen contract-PDF (optioneel — overschrijft de tekst hierboven voor de klant)</label>
+            <div id="pd-agreement-file-wrap">
+              ${p.agreement_bestand_naam ? `
+                <div class="detail-list-item">
+                  <span>📄 ${escapeHtml(p.agreement_bestand_naam)}</span>
+                  <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-remove">Verwijderen</button>
+                </div>` : ''}
+            </div>
+            <input type="file" id="pd-agreement-file-input" accept="application/pdf,image/*">
+            <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-upload">Uploaden</button>
+          </div>
+          ${p.agreement_signed_at
+            ? `<div class="empty-note">Getekend door <strong>${escapeHtml(p.agreement_signed_name ?? '')}</strong> op ${fmtDate(new Date(p.agreement_signed_at))}.
+                <button type="button" class="btn-icon" id="pd-reset-agreement" title="Handtekening wissen (bv. na wijziging voorwaarden)">✕</button>
+              </div>
+              <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-copy">Download kopie (ondertekeningsbewijs)</button>`
+            : '<div class="empty-note">Nog niet ondertekend.</div>'}
+        </div>
       </div>
+
+      <div class="pd-tab-panel hidden" data-pdpanel="media">
+        <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Foto's</h3>
+          <div class="field-row">
+            <input type="file" id="pd-photo-input" accept="image/*" multiple>
+            <button type="button" class="btn btn-ghost btn-small" id="pd-photo-upload">Uploaden</button>
+          </div>
+          <div class="photo-grid" id="pd-photo-grid"><div class="empty-note">Laden...</div></div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Footage / back-up</h3>
+          <div class="field">
+            <label style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" id="pd-archived" style="width:auto;" ${p.archived ? 'checked' : ''}>
+              Gearchiveerd
+            </label>
+          </div>
+          <div class="field"><label>Opslaglocatie</label><input type="text" id="pd-storage-location" value="${escapeAttr(p.storage_location ?? '')}" placeholder="Bv. externe SSD 2, NAS/Projecten/2026..."></div>
+        </div>
+      </div>
+
+      <div class="pd-tab-panel hidden" data-pdpanel="activiteit">
+        <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Agenda-items (${linkedEvents.length})</h3>
+          ${linkedEvents.length
+            ? linkedEvents.map((e) => `<div class="detail-list-item"><span>${escapeHtml(e.title)}</span><span>${fmtDateShort(new Date(e.start_time))}</span></div>`).join('')
+            : '<div class="empty-note">Nog geen agenda-items gekoppeld.</div>'}
+        </div>
+
+        <div class="detail-section">
+          <h3>Uren (totaal: ${totalHours}u)</h3>
+          ${linkedEntries.length
+            ? linkedEntries.map((t) => `<div class="detail-list-item"><span>${fmtDate(new Date(t.entry_date))} — ${escapeHtml(t.description ?? '')}</span><span>${t.hours}u</span></div>`).join('')
+            : '<div class="empty-note">Nog geen uren gelogd voor deze opdracht.</div>'}
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button type="button" class="btn btn-danger" id="pd-delete">Verwijderen</button>
         <div class="modal-actions-right">
@@ -42,93 +144,17 @@ export function openProjectDetail(id) {
         </div>
       </div>
     </form>
-
-    <div class="detail-section">
-      <h3>Klantenportaal</h3>
-      <div class="field"><label>Frame.io link</label><input type="url" id="pd-frame-url" value="${escapeAttr(p.frame_io_url ?? '')}" placeholder="https://..."></div>
-      <div class="field">
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="pd-frame-is-folder" style="width:auto;" ${p.frame_io_is_folder ? 'checked' : ''}>
-          Dit is een map met meerdere items (geen preview mogelijk — toont enkel een knop)
-        </label>
-      </div>
-      <div class="field">
-        <label>Klant koppelen (e-mail van hun portaal-account)</label>
-        <div class="field-row">
-          <input type="email" id="pd-client-email" placeholder="klant@bedrijf.be">
-          <button type="button" class="btn btn-ghost btn-small" id="pd-link-client">Koppelen</button>
-        </div>
-      </div>
-      <div class="empty-note">
-        ${p.client_user_id ? 'Klant is gekoppeld aan dit project.' : 'Nog geen klant gekoppeld — de klant moet eerst zelf een account aanmaken.'}
-        ${p.client_approved ? ` Goedgekeurd door klant op ${fmtDate(new Date(p.client_approved_at))}.` : ''}
-      </div>
-      <div class="field"><label>Briefing / omschrijving voor klant</label><textarea id="pd-client-brief" rows="3" placeholder="Korte uitleg over het project, wat er is afgesproken...">${escapeHtml(p.client_brief ?? '')}</textarea></div>
-      <div class="field"><label>Deliverables</label><textarea id="pd-deliverables" rows="2" placeholder="Bv. 20 foto's, 1 video van 2 minuten">${escapeHtml(p.deliverables ?? '')}</textarea></div>
-      <button type="button" class="btn btn-ghost btn-small" id="pd-open-scripting">→ Ideeën & Scripts voor dit project</button>
-    </div>
-
-    <div class="detail-section">
-      <h3>Overeenkomst (optioneel)</h3>
-      <div class="empty-note">Leeg = geen overeenkomst nodig, klant ziet meteen de rest van het project. Ingevuld (tekst of bestand) = klant moet eerst tekenen voor die verder mag.</div>
-      <div class="field-row" style="margin-bottom:10px;">
-        <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-template">Gebruik standaardcontract</button>
-      </div>
-      <div class="field"><label>Tekst van de overeenkomst</label><textarea id="pd-agreement" rows="6" placeholder="Voorwaarden, prijsafspraak, gebruiksrechten, ...">${escapeHtml(p.agreement_content ?? '')}</textarea></div>
-      <div class="field">
-        <label>Eigen contract-PDF (optioneel — overschrijft de tekst hierboven voor de klant)</label>
-        <div id="pd-agreement-file-wrap">
-          ${p.agreement_bestand_naam ? `
-            <div class="detail-list-item">
-              <span>📄 ${escapeHtml(p.agreement_bestand_naam)}</span>
-              <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-remove">Verwijderen</button>
-            </div>` : ''}
-        </div>
-        <input type="file" id="pd-agreement-file-input" accept="application/pdf,image/*">
-        <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-file-upload">Uploaden</button>
-      </div>
-      ${p.agreement_signed_at
-        ? `<div class="empty-note">Getekend door <strong>${escapeHtml(p.agreement_signed_name ?? '')}</strong> op ${fmtDate(new Date(p.agreement_signed_at))}.
-            <button type="button" class="btn-icon" id="pd-reset-agreement" title="Handtekening wissen (bv. na wijziging voorwaarden)">✕</button>
-          </div>
-          <button type="button" class="btn btn-ghost btn-small" id="pd-agreement-copy">Download kopie (ondertekeningsbewijs)</button>`
-        : '<div class="empty-note">Nog niet ondertekend.</div>'}
-    </div>
-
-    <div class="detail-section">
-      <h3>Foto's</h3>
-      <div class="field-row">
-        <input type="file" id="pd-photo-input" accept="image/*" multiple>
-        <button type="button" class="btn btn-ghost btn-small" id="pd-photo-upload">Uploaden</button>
-      </div>
-      <div class="photo-grid" id="pd-photo-grid"><div class="empty-note">Laden...</div></div>
-    </div>
-
-    <div class="detail-section">
-      <h3>Footage / back-up</h3>
-      <div class="field">
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="pd-archived" style="width:auto;" ${p.archived ? 'checked' : ''}>
-          Gearchiveerd
-        </label>
-      </div>
-      <div class="field"><label>Opslaglocatie</label><input type="text" id="pd-storage-location" value="${escapeAttr(p.storage_location ?? '')}" placeholder="Bv. externe SSD 2, NAS/Projecten/2026..."></div>
-    </div>
-
-    <div class="detail-section">
-      <h3>Agenda-items (${linkedEvents.length})</h3>
-      ${linkedEvents.length
-        ? linkedEvents.map((e) => `<div class="detail-list-item"><span>${escapeHtml(e.title)}</span><span>${fmtDateShort(new Date(e.start_time))}</span></div>`).join('')
-        : '<div class="empty-note">Nog geen agenda-items gekoppeld.</div>'}
-    </div>
-
-    <div class="detail-section">
-      <h3>Uren (totaal: ${totalHours}u)</h3>
-      ${linkedEntries.length
-        ? linkedEntries.map((t) => `<div class="detail-list-item"><span>${fmtDate(new Date(t.entry_date))} — ${escapeHtml(t.description ?? '')}</span><span>${t.hours}u</span></div>`).join('')
-        : '<div class="empty-note">Nog geen uren gelogd voor deze opdracht.</div>'}
-    </div>
   `);
+
+  document.querySelectorAll('#pd-tabs .client-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#pd-tabs .client-tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.pd-tab-panel').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.pdpanel !== btn.dataset.pdtab);
+      });
+    });
+  });
 
   document.getElementById('pd-cancel').addEventListener('click', closeModal);
 

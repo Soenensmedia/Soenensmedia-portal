@@ -432,3 +432,14 @@ De bedrijfsfoto (Fase 14) was universeel: elke klant zag dezelfde foto. Je kan n
 ### Eenmalig instellen
 
 Voer [`sql/023_client_photo.sql`](sql/023_client_photo.sql) uit in de SQL Editor.
+
+## Fase 18 — Opdracht-venster (admin) ook in tabs (nieuw)
+
+Dezelfde opruiming als Fase 16 bij de klant, nu aan jouw kant: het opdracht-detailvenster was 7 secties onder elkaar (Opdracht, Klantenportaal, Overeenkomst, Foto's, Footage/back-up, Agenda-items, Uren) — nu 4 tabbladen:
+
+- **Opdracht** — klant, titel, status, deadline, notities.
+- **Klant & Contract** — Klantenportaal (Frame.io, koppelen, briefing, deliverables) + Overeenkomst.
+- **Media & Archief** — Foto's + Footage/back-up.
+- **Activiteit** — Agenda-items + Uren.
+
+"Verwijderen / Sluiten / Opslaan" blijft altijd onderaan zichtbaar, ongeacht welk tabblad open staat — dus je kan op elk tabblad wijzigen en gewoon opslaan zonder terug te moeten naar "Opdracht". Geen enkel veld of knop is verdwenen, puur een andere indeling. Geen nieuwe SQL nodig.

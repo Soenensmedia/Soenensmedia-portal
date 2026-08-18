@@ -454,3 +454,19 @@ Twee echte gaten gedicht: feedback die de klant achterliet kwam nergens toe bij 
 ### Eenmalig instellen
 
 Geen nieuwe SQL — `project_feedback` liet admin al lezen/schrijven sinds Fase 2, dit gebruikt enkel bestaande rechten.
+
+## Fase 20 — Activiteit-badge op Dashboard + e-mail bij nieuwe feedback (nieuw)
+
+Aanvulling op Fase 19: naast het "Aandacht nodig"-paneel zie je nu ook meteen op een opdracht-kaart of de klant iets gedaan heeft, en je krijgt een e-mail zodra een klant feedback achterlaat (niet enkel zichtbaar in het portaal).
+
+- **"Nieuw"-badge op opdracht-kaarten**: verschijnt zodra een klant het project goedkeurde of het contract tekende, en verdwijnt automatisch zodra je die opdracht opent. Werkt net als de "Nieuwe update"-badge bij de klant (Fase 16), maar dan omgekeerd.
+- **E-mail bij nieuwe feedback**: zodra een klant feedback achterlaat (algemeen of op een idee/script), krijg je een mailtje met wie het was, op welk project, en de tekst. Reageert de klant een tweede keer voor je hebt kunnen antwoorden, krijg je gewoon een nieuwe mail per bericht — normaal gedrag. Antwoord jij zelf op feedback, dan wordt daar (uiteraard) geen mail voor verstuurd.
+
+### Eenmalig instellen
+
+1. In Supabase: **Edge Functions** → nieuwe functie **"notify-admin-feedback"** aanmaken, plak de inhoud van [`supabase/functions/notify-admin-feedback/index.ts`](supabase/functions/notify-admin-feedback/index.ts) → Deploy. Gebruikt dezelfde `BREVO_API_KEY`-secret als de bestaande statusmail-functie — die hoef je dus niet opnieuw in te stellen.
+2. Zorg dat jouw eigen profiel (`profiles`-tabel, rol `admin`) een correct e-mailadres heeft staan — daar stuurt de functie naartoe.
+
+### Beveiliging
+
+De activiteit-badge wordt lokaal per browser bijgehouden (zelfde aanpak als Fase 16, geen nieuwe tabel). De e-mailfunctie mailt enkel wanneer de aanroeper effectief de gekoppelde klant van dat project is — een klant kan dus nooit een mail laten versturen "namens" een ander project.

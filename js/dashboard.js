@@ -4,6 +4,7 @@ import { createProject, updateProject, notifyStatusChange } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { showToast } from './toast.js';
+import { hasUnseenClientActivity } from './notifications.js';
 
 function attentionItems() {
   const items = [];
@@ -106,6 +107,7 @@ function cardHtml(p) {
   const overdue = p.deadline && !isDone && new Date(p.deadline) < new Date(new Date().toDateString());
   return `
     <div class="project-card" data-id="${p.id}" draggable="true">
+      ${hasUnseenClientActivity(p) ? '<span class="card-badge-new">Nieuw</span>' : ''}
       <div class="client">${escapeHtml(p.client_name)}</div>
       <div class="title">${escapeHtml(p.title)}</div>
       ${p.deadline ? `<div class="deadline ${overdue ? 'overdue' : ''}">Deadline: ${fmtDate(new Date(p.deadline))}</div>` : ''}

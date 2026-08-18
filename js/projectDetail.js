@@ -5,10 +5,13 @@ import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
 import { generateAgreementCopyPdf, downloadPdf } from './pdf.js';
+import { markProjectSeen } from './notifications.js';
 
 export function openProjectDetail(id) {
   const p = projectById(id);
   if (!p) return;
+
+  markProjectSeen(p);
 
   const linkedEvents = state.events
     .filter((e) => e.project_id === id)
@@ -124,10 +127,10 @@ export function openProjectDetail(id) {
         <div class="detail-section" style="border-top:none; padding-top:0;">
           <h3>Feedback van klant</h3>
           <div id="pd-feedback-list"><div class="empty-note">Laden...</div></div>
-          <form id="pd-feedback-form" class="feedback-form">
+          <div id="pd-feedback-form" class="feedback-form">
             <input type="text" id="pd-feedback-input" placeholder="Antwoord aan de klant...">
-            <button type="submit" class="btn btn-red btn-small">Versturen</button>
-          </form>
+            <button type="button" id="pd-feedback-send" class="btn btn-red btn-small">Versturen</button>
+          </div>
         </div>
 
         <div class="detail-section">
@@ -237,8 +240,7 @@ export function openProjectDetail(id) {
   refreshPhotoGrid(id);
   refreshFeedbackList(id);
 
-  document.getElementById('pd-feedback-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function sendAdminFeedback() {
     const input = document.getElementById('pd-feedback-input');
     const message = input.value.trim();
     if (!message) return;
@@ -250,6 +252,15 @@ export function openProjectDetail(id) {
     } catch (err) {
       showToast(err.message, true);
     }
+  }
+  document.getElementById('pd-feedback-send').addEventListener('click', sendAdminFeedback);
+  document.getElementById('pd-feedback-input').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    // De input zit binnen het grote pd-form: zonder dit zou Enter hier het
+    // hele opdrachtformulier proberen op te slaan/sluiten i.p.v. enkel te antwoorden.
+    e.preventDefault();
+    e.stopPropagation();
+    sendAdminFeedback();
   });
 
   document.getElementById('pd-photo-upload').addEventListener('click', async () => {

@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl, notifyAdminFeedback } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, downloadPdf } from './pdf.js';
 import { showToast } from './toast.js';
@@ -611,6 +611,7 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
       state.clientFeedbackByProject[p.id] = await fetchProjectFeedback(p.id);
       showToast('Feedback verstuurd');
       renderClientProjectDetail(p.id);
+      notifyAdminFeedback(p.id, message).catch(() => {});
     } catch (err) {
       showToast(err.message, true);
     }
@@ -647,6 +648,7 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
         state.clientFeedbackByProject[p.id] = await fetchProjectFeedback(p.id);
         showToast('Feedback verstuurd');
         renderClientProjectDetail(p.id);
+        notifyAdminFeedback(p.id, message).catch(() => {});
       } catch (err) {
         showToast(err.message, true);
       }

@@ -155,7 +155,7 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .kanban-col-count { color: var(--text-faint); }
 
 .project-card {
-  background: var(--paneld); border: 1px solid var(--line); border-radius: 6px;
+  position: relative; background: var(--paneld); border: 1px solid var(--line); border-radius: 6px;
   padding: 10px 12px; margin-bottom: 8px; cursor: grab;
 }
 .project-card:hover { border-color: #333; }
@@ -164,6 +164,11 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .project-card .title { font-size: 13px; color: var(--text); margin-top: 2px; }
 .project-card .deadline { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
 .project-card .deadline.overdue { color: #e07070; }
+.card-badge-new {
+  position: absolute; top: 8px; right: 8px; background: var(--red); color: #fff;
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 20px;
+}
 
 /* ══════════ AGENDA ══════════ */
 .week-nav { display: flex; align-items: center; gap: 10px; }

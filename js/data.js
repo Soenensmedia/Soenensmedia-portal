@@ -98,6 +98,12 @@ export const notifyStatusChange = (projectId) =>
     return data;
   });
 
+export const notifyAdminFeedback = (projectId, message) =>
+  sb.functions.invoke('notify-admin-feedback', { body: { projectId, message } }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
+  });
+
 export const sendDocumentEmail = (payload) =>
   sb.functions.invoke('send-document-email', { body: payload }).then(({ data, error }) => {
     if (error) throw error;

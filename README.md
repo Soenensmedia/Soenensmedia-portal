@@ -480,3 +480,12 @@ Rechtzetting: de herindeling van 6 naar 4 tabbladen die je goedkeurde via de moc
 - **Overzicht** en **Feedback** blijven zoals ze waren.
 
 Geen nieuwe SQL, geen functionele wijziging — enkel de indeling die al was goedgekeurd, nu ook effectief live bij de klant.
+
+## Fase 22 — Welkomstgids ingeklapt + niet meer dubbel (nieuw)
+
+Feedback: het scherm net na inloggen voelde vol door de welkomstgids-tekst.
+
+- **Inklapbaar**: is de welkomstgids langer dan een paar zinnen, dan toont het portaal nu enkel het begin met een **"Lees meer"**-link eronder — de volledige tekst blijft gewoon beschikbaar, maar domineert niet meer het scherm. Korte teksten blijven gewoon volledig zichtbaar, geen onnodige knop.
+- **Bugfix**: de welkomstgids stond ook nog dubbel — één keer op het startscherm (waar hij hoort) én nogmaals bovenaan de "Overzicht"-tab van elk project. Dat tweede exemplaar is verwijderd.
+
+Geen nieuwe SQL, geen configuratie nodig.

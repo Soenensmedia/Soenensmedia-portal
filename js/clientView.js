@@ -128,6 +128,19 @@ function contactCardHtml() {
     </div>`;
 }
 
+// Boven deze lengte tonen we de welkomstgids standaard ingeklapt (met
+// "Lees meer"), zodat die niet elke keer opnieuw het scherm domineert.
+const WELCOME_GUIDE_COLLAPSE_THRESHOLD = 150;
+
+function welcomeGuideHtml() {
+  const text = state.portalWelcomeGuide;
+  if (!text) return '';
+  const isLong = text.length > WELCOME_GUIDE_COLLAPSE_THRESHOLD;
+  return `
+    <p class="client-welcome-guide ${isLong ? 'collapsed' : ''}" id="welcome-guide-text">${escapeHtml(text)}</p>
+    ${isLong ? '<button type="button" class="btn-link" id="welcome-guide-toggle">Lees meer</button>' : ''}`;
+}
+
 function renderClientList() {
   state.activeClientProjectId = null;
   const container = document.getElementById('client-projects-container');
@@ -142,7 +155,7 @@ function renderClientList() {
     <div class="client-welcome">
       <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
-      ${state.portalWelcomeGuide ? `<p class="client-welcome-guide">${escapeHtml(state.portalWelcomeGuide)}</p>` : ''}
+      ${welcomeGuideHtml()}
     </div>
     ${active.length ? `
       ${done.length ? '<div class="client-group-label">Actief</div>' : ''}
@@ -155,6 +168,12 @@ function renderClientList() {
 
   container.querySelectorAll('.client-project-tile').forEach((el) => {
     el.addEventListener('click', () => renderClientProjectDetail(el.dataset.id));
+  });
+
+  document.getElementById('welcome-guide-toggle')?.addEventListener('click', (e) => {
+    const textEl = document.getElementById('welcome-guide-text');
+    const collapsed = textEl.classList.toggle('collapsed');
+    e.target.textContent = collapsed ? 'Lees meer' : 'Lees minder';
   });
 }
 
@@ -420,12 +439,6 @@ const CLIENT_DETAIL_TABS = [
 
 function overzichtTabHtml(p) {
   return `
-    ${state.portalWelcomeGuide ? `
-      <div class="detail-section" style="border-top:none; padding-top:0;">
-        <h3>Welkom</h3>
-        <p class="client-brief-text">${escapeHtml(state.portalWelcomeGuide)}</p>
-      </div>` : ''}
-
     <div class="client-meta-row">
       ${p.deadline ? `<div class="client-meta-item"><span class="client-meta-label">Deadline</span><span>${fmtDate(new Date(p.deadline))}</span></div>` : ''}
       ${p.created_at ? `<div class="client-meta-item"><span class="client-meta-label">Opdracht sinds</span><span>${fmtDate(new Date(p.created_at))}</span></div>` : ''}

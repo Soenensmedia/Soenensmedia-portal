@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -152,6 +152,7 @@ export function openProjectDetail(id) {
       <div class="modal-actions">
         <button type="button" class="btn btn-danger" id="pd-delete">Verwijderen</button>
         <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="pd-duplicate" title="Handig voor terugkerende opdrachten, bv. maandelijkse retainer-video's">Dupliceer</button>
           <button type="button" class="btn btn-ghost" id="pd-cancel">Sluiten</button>
           <button type="submit" class="btn btn-red">Opslaan</button>
         </div>
@@ -179,6 +180,35 @@ export function openProjectDetail(id) {
       closeModal();
       renderDashboard();
       showToast('Opdracht verwijderd');
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-duplicate').addEventListener('click', async () => {
+    if (!confirm(`Kopie maken van "${p.title}"? Klant, briefing en deliverables blijven behouden — status, deadline, contract en foto's beginnen opnieuw.`)) return;
+    try {
+      const payload = {
+        client_name: p.client_name,
+        title: `${p.title} (kopie)`,
+        status: 'nieuw',
+        deadline: null,
+        notes: null,
+        frame_io_url: null,
+        frame_io_is_folder: false,
+        client_user_id: p.client_user_id,
+        client_brief: p.client_brief,
+        deliverables: p.deliverables,
+        client_id: p.client_id,
+        archived: false,
+        storage_location: null,
+      };
+      const created = await createProject(payload);
+      state.projects.unshift(created);
+      closeModal();
+      renderDashboard();
+      showToast('Opdracht gedupliceerd');
+      openProjectDetail(created.id);
     } catch (err) {
       showToast(err.message, true);
     }

@@ -3,8 +3,11 @@ import { escapeHtml } from './util.js';
 import { createProject, updateProject, notifyStatusChange } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
+import { openClientForm } from './clients.js';
 import { showToast } from './toast.js';
 import { hasUnseenClientActivity } from './notifications.js';
+
+const RETAINER_RENEWAL_WARNING_DAYS = 30;
 
 function attentionItems() {
   const items = [];
@@ -17,14 +20,29 @@ function attentionItems() {
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       const last = thread[thread.length - 1];
       if (last && last.author_user_id === p.client_user_id) {
-        items.push({ project: p, reason: 'Wacht op jouw antwoord' });
+        items.push({ type: 'project', id: p.id, title: p.title, sub: p.client_name, reason: 'Wacht op jouw antwoord' });
       }
     }
 
     if ((p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at) {
-      items.push({ project: p, reason: 'Contract nog niet ondertekend door klant' });
+      items.push({ type: 'project', id: p.id, title: p.title, sub: p.client_name, reason: 'Contract nog niet ondertekend door klant' });
     }
   });
+
+  const now = new Date();
+  (state.clients || []).forEach((c) => {
+    if (!c.is_retainer || !c.retainer_verlengdatum) return;
+    const renewDate = new Date(c.retainer_verlengdatum);
+    const daysLeft = Math.ceil((renewDate - now) / (1000 * 60 * 60 * 24));
+    if (daysLeft > RETAINER_RENEWAL_WARNING_DAYS) return;
+    const reason = daysLeft < 0
+      ? `Retainer verlopen op ${fmtDate(renewDate)}`
+      : daysLeft === 0
+        ? 'Retainer verlengt vandaag'
+        : `Retainer verlengt over ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dagen'}`;
+    items.push({ type: 'client', id: c.id, title: c.naam, sub: 'Retainer', reason });
+  });
+
   return items;
 }
 
@@ -35,8 +53,8 @@ function attentionHtml() {
     <div class="attention-panel">
       <div class="attention-title">Aandacht nodig (${items.length})</div>
       ${items.map((it) => `
-        <div class="attention-row" data-id="${it.project.id}">
-          <span class="attention-project">${escapeHtml(it.project.title)} <span class="attention-client">— ${escapeHtml(it.project.client_name)}</span></span>
+        <div class="attention-row" data-type="${it.type}" data-id="${it.id}">
+          <span class="attention-project">${escapeHtml(it.title)} <span class="attention-client">— ${escapeHtml(it.sub)}</span></span>
           <span class="attention-reason">${escapeHtml(it.reason)}</span>
         </div>`).join('')}
     </div>`;
@@ -47,7 +65,14 @@ export function renderDashboard() {
   if (attentionContainer) {
     attentionContainer.innerHTML = attentionHtml();
     attentionContainer.querySelectorAll('.attention-row').forEach((el) => {
-      el.addEventListener('click', () => openProjectDetail(el.dataset.id));
+      el.addEventListener('click', () => {
+        if (el.dataset.type === 'client') {
+          const client = state.clients.find((c) => c.id === el.dataset.id);
+          if (client) openClientForm(client);
+        } else {
+          openProjectDetail(el.dataset.id);
+        }
+      });
     });
   }
 

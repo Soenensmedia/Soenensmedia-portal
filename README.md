@@ -520,3 +520,12 @@ Vervolg op de Fase 23-audit: je moest voorheen voor élke nieuwe klant eerst zel
 ### Beveiliging
 
 Enkel jij (admin) kan deze functie aanroepen — gecheckt via je profiel-rol, net als de andere Edge Functions. De functie kijkt eerst of er al een account met dat e-mailadres bestaat vóór ze iets aanmaakt, zodat een bestaande klant nooit per ongeluk een duplicaat-account of een overbodige tweede uitnodiging krijgt.
+
+## Fase 25 — Retainer-alerts + opdracht dupliceren (nieuw)
+
+Twee toevoegingen gericht op je retainer-klanten (Shorts + Paid Ad-video + Brand Video), voortbouwend op de "wat kan ik nog toevoegen"-vraag.
+
+- **Retainer-verlenging in "Aandacht nodig"**: het paneel op het Dashboard houdt nu ook de `retainer_verlengdatum` van je klanten in de gaten. Loopt een retainer binnen 30 dagen af (of is hij al verlopen), dan verschijnt dat hier — klikken opent meteen de klantfiche. Klanten zonder retainer of zonder ingevulde verlengdatum verschijnen hier nooit.
+- **"Dupliceer"-knop** in het opdrachtvenster: handig voor terugkerende opdrachten zoals de maandelijkse Shorts. Klant, briefing en deliverables worden overgenomen; status (start bij "Nieuw"), deadline, notities, Frame.io-link, contract en foto's beginnen wél telkens opnieuw — zo begin je nooit per ongeluk met een al-ondertekend contract of oude foto's op een nieuwe opdracht.
+
+Geen nieuwe SQL, geen Edge Function — beide features hergebruiken bestaande tabellen en de bestaande "opdracht toevoegen"-logica.

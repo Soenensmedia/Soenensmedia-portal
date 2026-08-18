@@ -1,4 +1,4 @@
-import { signIn, signOut, onAuthChange } from './auth.js';
+import { signIn, signOut, onAuthChange, requestPasswordReset, updatePassword, getSession } from './auth.js';
 import { state } from './state.js';
 import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
@@ -14,6 +14,7 @@ import { renderClientView, openEditNameModal } from './clientView.js';
 import { showToast } from './toast.js';
 
 const loginView = document.getElementById('login-view');
+const resetPasswordView = document.getElementById('reset-password-view');
 const appShell = document.getElementById('app-shell');
 const clientShell = document.getElementById('client-shell');
 const loginForm = document.getElementById('login-form');
@@ -28,6 +29,42 @@ loginForm.addEventListener('submit', async (e) => {
     await signIn(email, password);
   } catch (err) {
     loginError.textContent = err.message;
+  }
+});
+
+document.getElementById('forgot-password-btn').addEventListener('click', async () => {
+  loginError.textContent = '';
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    loginError.textContent = 'Vul eerst je e-mailadres in.';
+    return;
+  }
+  try {
+    await requestPasswordReset(email);
+    showToast('E-mail met resetlink verstuurd — check ook je spam-map');
+  } catch (err) {
+    loginError.textContent = err.message;
+  }
+});
+
+document.getElementById('reset-password-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const resetError = document.getElementById('reset-password-error');
+  resetError.textContent = '';
+  const newPassword = document.getElementById('reset-password-input').value;
+  try {
+    await updatePassword(newPassword);
+    showToast('Wachtwoord aangepast');
+    resetPasswordView.classList.add('hidden');
+    const session = await getSession();
+    if (!session) {
+      showLoginView();
+      return;
+    }
+    state.profile = await fetchOwnProfile();
+    if (state.profile.role === 'admin') showAppShell(); else showClientShell();
+  } catch (err) {
+    resetError.textContent = err.message;
   }
 });
 
@@ -76,6 +113,7 @@ function switchView(view) {
 
 function showLoginView() {
   loginView.classList.remove('hidden');
+  resetPasswordView.classList.add('hidden');
   appShell.classList.add('hidden');
   clientShell.classList.add('hidden');
   state.profile = null;
@@ -108,11 +146,19 @@ async function showAppShell() {
 
 function showClientShell() {
   loginView.classList.add('hidden');
+  resetPasswordView.classList.add('hidden');
   clientShell.classList.remove('hidden');
   renderClientView();
 }
 
-onAuthChange(async (session) => {
+onAuthChange(async (session, event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    loginView.classList.add('hidden');
+    appShell.classList.add('hidden');
+    clientShell.classList.add('hidden');
+    resetPasswordView.classList.remove('hidden');
+    return;
+  }
   if (!session) {
     showLoginView();
     return;

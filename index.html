@@ -34,6 +34,28 @@
       </div>
       <button type="submit" class="btn btn-red" style="width:100%" id="login-submit">Inloggen</button>
       <div class="login-error" id="login-error"></div>
+      <button type="button" class="btn-link" id="forgot-password-btn" style="margin-top:12px;">Wachtwoord vergeten?</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════ WACHTWOORD RESETTEN ══════════ -->
+<div id="reset-password-view" class="hidden">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-brand-row">
+        <img src="assets/logo.png" alt="SoenensMedia">
+        <span class="brand-name">SoenensMedia</span>
+      </div>
+      <div class="brand-sub">Portaal</div>
+    </div>
+    <form id="reset-password-form">
+      <div class="field">
+        <label for="reset-password-input">Nieuw wachtwoord</label>
+        <input type="password" id="reset-password-input" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-red" style="width:100%">Wachtwoord instellen</button>
+      <div class="login-error" id="reset-password-error"></div>
     </form>
   </div>
 </div>

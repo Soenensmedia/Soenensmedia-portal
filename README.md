@@ -489,3 +489,18 @@ Feedback: het scherm net na inloggen voelde vol door de welkomstgids-tekst.
 - **Bugfix**: de welkomstgids stond ook nog dubbel — één keer op het startscherm (waar hij hoort) én nogmaals bovenaan de "Overzicht"-tab van elk project. Dat tweede exemplaar is verwijderd.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 23 — Wachtwoord vergeten (nieuw)
+
+Volledige audit van het portaal (code + logica) na de vraag "werkt alles en wat ontbreekt er nog?". Belangrijkste vondst: er was **geen enkele manier om een wachtwoord te herstellen** — niet voor jou, niet voor een klant. Zonder dit zou een vergeten wachtwoord betekenen dat iemand volledig vast zat tot jij het handmatig resette via Supabase.
+
+- **"Wachtwoord vergeten?"**-link onder het inlogformulier: vult de klant/jij het e-mailadres in en klikt hierop, dan stuurt Supabase automatisch een reset-mail.
+- Die mail leidt terug naar het portaal met een **"Nieuw wachtwoord instellen"**-scherm — na het invullen ben je meteen ingelogd.
+
+### Eenmalig instellen
+
+Geen nieuwe SQL. Dit gebruikt Supabase's **ingebouwde** auth-mail (niet de Brevo-koppeling die je voor de andere meldingen instelde) — check in Supabase → **Authentication → Email Templates / SMTP Settings** dat "Reset Password"-mails effectief verstuurd worden. Zonder eigen SMTP-configuratie gebruikt Supabase een gratis, rate-gelimiteerde afzender die op lage volumes gewoon werkt, maar het is de moeite waard dit één keer te testen met je eigen account.
+
+### Nog een bevinding (niet gebouwd, ter overweging)
+
+Een **nieuwe klant kan nog geen eigen account aanmaken via het portaal** — jij moet momenteel voor elke nieuwe klant zelf een gebruiker aanmaken in de Supabase Dashboard (Authentication → Users → Add user) vóór je die kan koppelen via "Klant koppelen". Dat is bewust zo ontworpen (geen publieke registratie, veiligheidsredenen), maar betekent wel een extra handmatige stap per nieuwe klant. Een "Klant uitnodigen"-knop in het portaal zelf zou dat kunnen automatiseren — vraagt een nieuwe Edge Function die met een service-rol een account aanmaakt en een uitnodigingsmail verstuurt. Laat het weten als je dat wil, dat bouw ik dan als aparte fase.

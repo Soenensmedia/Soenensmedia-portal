@@ -17,9 +17,21 @@ export async function signOut() {
   state.user = null;
 }
 
+export async function requestPasswordReset(email) {
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) throw error;
+}
+
+export async function updatePassword(newPassword) {
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
 export function onAuthChange(callback) {
-  sb.auth.onAuthStateChange((_event, session) => {
+  sb.auth.onAuthStateChange((event, session) => {
     state.user = session?.user ?? null;
-    callback(session);
+    callback(session, event);
   });
 }

@@ -470,3 +470,13 @@ Aanvulling op Fase 19: naast het "Aandacht nodig"-paneel zie je nu ook meteen op
 ### Beveiliging
 
 De activiteit-badge wordt lokaal per browser bijgehouden (zelfde aanpak als Fase 16, geen nieuwe tabel). De e-mailfunctie mailt enkel wanneer de aanroeper effectief de gekoppelde klant van dat project is — een klant kan dus nooit een mail laten versturen "namens" een ander project.
+
+## Fase 21 — Client-tabs alsnog écht samengevoegd (nieuw)
+
+Rechtzetting: de herindeling van 6 naar 4 tabbladen die je goedkeurde via de mockup was enkel bij jouw kant (admin, Fase 18) doorgevoerd — bij de klant zelf, waar de oorspronkelijke "chaotisch"-klacht net over ging, stonden nog steeds alle 6 tabbladen. Nu ook daar toegepast:
+
+- **Media** = Ideeën & Scripts + Foto's & Video samen, elk met een eigen kopje binnen de tab.
+- **Documenten** = Offertes & Facturen + Contract samen — deze tab verschijnt enkel als er ook echt iets is (geen lege tab meer als er nog niets speelt).
+- **Overzicht** en **Feedback** blijven zoals ze waren.
+
+Geen nieuwe SQL, geen functionele wijziging — enkel de indeling die al was goedgekeurd, nu ook effectief live bij de klant.

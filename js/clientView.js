@@ -413,10 +413,8 @@ async function handleClientDownload(kind, id) {
 
 const CLIENT_DETAIL_TABS = [
   { key: 'overzicht', label: 'Overzicht' },
-  { key: 'ideeen', label: 'Ideeën & Scripts' },
-  { key: 'media', label: "Foto's & Video" },
-  { key: 'financien', label: 'Offertes & Facturen' },
-  { key: 'contract', label: 'Contract' },
+  { key: 'media', label: 'Media' },
+  { key: 'documenten', label: 'Documenten' },
   { key: 'feedback', label: 'Feedback' },
 ];
 
@@ -450,7 +448,7 @@ function ideeenTabHtml(concepts, feedback) {
     : '<div class="client-empty-state">💡 Nog geen ideeën of scripts toegevoegd — die verschijnen hier zodra ze klaarstaan.</div>';
 }
 
-function mediaTabHtml(p, photos) {
+function fotoVideoTabHtml(p, photos) {
   return `
     <div class="section-header-row">
       <h3>Foto's</h3>
@@ -482,6 +480,17 @@ function mediaTabHtml(p, photos) {
       </div>` : ''}`;
 }
 
+function mediaTabHtml(p, photos, concepts, feedback) {
+  return `
+    <div class="detail-section" style="border-top:none; padding-top:0;">
+      <h3>Ideeën & Scripts</h3>
+      ${ideeenTabHtml(concepts, feedback)}
+    </div>
+    <div class="detail-section">
+      ${fotoVideoTabHtml(p, photos)}
+    </div>`;
+}
+
 function financeTabHtml(offertes, facturen) {
   return `
     ${offertes.map((o) => `
@@ -503,11 +512,27 @@ function contractTabHtml(p) {
   return `
     ${p.agreement_bestand_naam
       ? `<button type="button" class="btn btn-ghost btn-small agreement-view-file-btn" data-path="${escapeAttr(p.agreement_bestand_path)}">📄 Bekijk contract (${escapeHtml(p.agreement_bestand_naam)})</button>`
-      : (p.agreement_content ? `<p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>` : '<div class="client-empty-state">Nog geen contract toegevoegd.</div>')}
+      : (p.agreement_content ? `<p class="client-brief-text">${escapeHtml(p.agreement_content)}</p>` : '')}
     ${p.agreement_signed_at
       ? `<div class="empty-note" style="margin-top:14px;">Ondertekend door ${escapeHtml(p.agreement_signed_name ?? '')} op ${fmtDate(new Date(p.agreement_signed_at))}.</div>
          <button type="button" class="btn btn-ghost btn-small agreement-copy-btn" data-id="${p.id}">Download kopie</button>`
       : ''}`;
+}
+
+function documentenTabHtml(p, offertes, facturen) {
+  const hasContract = !!(p.agreement_content || p.agreement_bestand_path);
+  const hasFinance = offertes.length > 0 || facturen.length > 0;
+  return `
+    ${hasContract ? `
+      <div class="detail-section" style="border-top:none; padding-top:0;">
+        <h3>Contract</h3>
+        ${contractTabHtml(p)}
+      </div>` : ''}
+    ${hasFinance ? `
+      <div class="detail-section" ${hasContract ? '' : 'style="border-top:none; padding-top:0;"'}>
+        <h3>Offertes & Facturen</h3>
+        ${financeTabHtml(offertes, facturen)}
+      </div>` : ''}`;
 }
 
 function feedbackTabHtml(generalFeedback) {
@@ -527,16 +552,15 @@ function projectDetailHtml(p, feedback, photos, concepts) {
   const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
   const generalFeedback = feedback.filter((f) => !f.concept_id);
 
+  const hasDocumenten = !!(p.agreement_content || p.agreement_bestand_path) || facturen.length > 0 || offertes.length > 0;
   const tabCounts = {
-    ideeen: concepts.length,
-    media: photos.length,
-    financien: facturen.length + offertes.length,
+    media: concepts.length + photos.length,
+    documenten: facturen.length + offertes.length,
     feedback: generalFeedback.length,
   };
 
   const visibleTabs = CLIENT_DETAIL_TABS.filter((t) => {
-    if (t.key === 'financien') return tabCounts.financien > 0;
-    if (t.key === 'contract') return !!(p.agreement_content || p.agreement_bestand_path);
+    if (t.key === 'documenten') return hasDocumenten;
     return true;
   });
   const activeTab = visibleTabs.some((t) => t.key === state.activeClientDetailTab) ? state.activeClientDetailTab : 'overzicht';
@@ -567,10 +591,8 @@ function projectDetailHtml(p, feedback, photos, concepts) {
 
       <div class="client-tab-panel">
         ${activeTab === 'overzicht' ? overzichtTabHtml(p) : ''}
-        ${activeTab === 'ideeen' ? ideeenTabHtml(concepts, feedback) : ''}
-        ${activeTab === 'media' ? mediaTabHtml(p, photos) : ''}
-        ${activeTab === 'financien' ? financeTabHtml(offertes, facturen) : ''}
-        ${activeTab === 'contract' ? contractTabHtml(p) : ''}
+        ${activeTab === 'media' ? mediaTabHtml(p, photos, concepts, feedback) : ''}
+        ${activeTab === 'documenten' ? documentenTabHtml(p, offertes, facturen) : ''}
         ${activeTab === 'feedback' ? feedbackTabHtml(generalFeedback) : ''}
       </div>
     </div>`;

@@ -104,6 +104,12 @@ export const notifyAdminFeedback = (projectId, message) =>
     return data;
   });
 
+export const inviteClient = (email, projectId = null) =>
+  sb.functions.invoke('invite-client', { body: { email, projectId } }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
+  });
+
 export const sendDocumentEmail = (payload) =>
   sb.functions.invoke('send-document-email', { body: payload }).then(({ data, error }) => {
     if (error) throw error;

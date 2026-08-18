@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -63,9 +63,10 @@ export function openProjectDetail(id) {
               <input type="email" id="pd-client-email" placeholder="klant@bedrijf.be">
               <button type="button" class="btn btn-ghost btn-small" id="pd-link-client">Koppelen</button>
             </div>
+            <div class="empty-note">Heeft die klant nog geen account? <button type="button" class="btn-link" id="pd-invite-client" style="display:inline; padding:0; font-size:12px;">Nodig uit</button> — maakt automatisch een account aan en koppelt meteen.</div>
           </div>
           <div class="empty-note">
-            ${p.client_user_id ? 'Klant is gekoppeld aan dit project.' : 'Nog geen klant gekoppeld — de klant moet eerst zelf een account aanmaken.'}
+            ${p.client_user_id ? 'Klant is gekoppeld aan dit project.' : 'Nog geen klant gekoppeld.'}
             ${p.client_approved ? ` Goedgekeurd door klant op ${fmtDate(new Date(p.client_approved_at))}.` : ''}
           </div>
           <div class="field"><label>Briefing / omschrijving voor klant</label><textarea id="pd-client-brief" rows="3" placeholder="Korte uitleg over het project, wat er is afgesproken...">${escapeHtml(p.client_brief ?? '')}</textarea></div>
@@ -192,6 +193,26 @@ export function openProjectDetail(id) {
       const idx = state.projects.findIndex((x) => x.id === id);
       state.projects[idx] = updated;
       showToast('Klant gekoppeld');
+      closeModal();
+      openProjectDetail(id);
+      renderDashboard();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-invite-client').addEventListener('click', async () => {
+    const email = document.getElementById('pd-client-email').value.trim();
+    if (!email) {
+      showToast('Vul eerst een e-mailadres in', true);
+      return;
+    }
+    try {
+      const result = await inviteClient(email, id);
+      const updated = await fetchProject(id);
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      showToast(result.invited ? 'Uitnodiging verstuurd en gekoppeld' : 'Account bestond al — meteen gekoppeld');
       closeModal();
       openProjectDetail(id);
       renderDashboard();

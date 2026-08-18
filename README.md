@@ -501,6 +501,22 @@ Volledige audit van het portaal (code + logica) na de vraag "werkt alles en wat 
 
 Geen nieuwe SQL. Dit gebruikt Supabase's **ingebouwde** auth-mail (niet de Brevo-koppeling die je voor de andere meldingen instelde) — check in Supabase → **Authentication → Email Templates / SMTP Settings** dat "Reset Password"-mails effectief verstuurd worden. Zonder eigen SMTP-configuratie gebruikt Supabase een gratis, rate-gelimiteerde afzender die op lage volumes gewoon werkt, maar het is de moeite waard dit één keer te testen met je eigen account.
 
-### Nog een bevinding (niet gebouwd, ter overweging)
+### Bevinding uit dezelfde audit, nu ook gebouwd
 
-Een **nieuwe klant kan nog geen eigen account aanmaken via het portaal** — jij moet momenteel voor elke nieuwe klant zelf een gebruiker aanmaken in de Supabase Dashboard (Authentication → Users → Add user) vóór je die kan koppelen via "Klant koppelen". Dat is bewust zo ontworpen (geen publieke registratie, veiligheidsredenen), maar betekent wel een extra handmatige stap per nieuwe klant. Een "Klant uitnodigen"-knop in het portaal zelf zou dat kunnen automatiseren — vraagt een nieuwe Edge Function die met een service-rol een account aanmaakt en een uitnodigingsmail verstuurt. Laat het weten als je dat wil, dat bouw ik dan als aparte fase.
+Zie Fase 24 hieronder — het "geen in-app klant-uitnodigen"-gat is opgelost.
+
+## Fase 24 — Klant uitnodigen vanuit het portaal (nieuw)
+
+Vervolg op de Fase 23-audit: je moest voorheen voor élke nieuwe klant eerst zelf een gebruiker aanmaken in de Supabase Dashboard vóór je die kon koppelen. Dat kan nu in 1 stap, vanuit het portaal zelf.
+
+- In het opdrachtvenster, tab **"Klant & Contract"**, staat naast "Koppelen" nu ook **"Nodig uit"**. Typ het e-mailadres van de klant en klik erop: heeft die nog geen account, dan wordt er automatisch één aangemaakt en krijgt de klant een uitnodigingsmail (van Supabase zelf) om een wachtwoord te kiezen — en het project is meteen gekoppeld. Bestond het account al, dan wordt er gewoon meteen gekoppeld, zonder een overbodige tweede uitnodiging te versturen.
+- "Koppelen" blijft ook gewoon bestaan voor wanneer je zeker weet dat het account al bestaat en je enkel wil koppelen.
+
+### Eenmalig instellen
+
+1. In Supabase: **Edge Functions** → nieuwe functie **"invite-client"** aanmaken, plak de inhoud van [`supabase/functions/invite-client/index.ts`](supabase/functions/invite-client/index.ts) → Deploy. Geen extra secret nodig.
+2. Dit gebruikt, net als de wachtwoord-reset, Supabase's **ingebouwde** uitnodigingsmail (Authentication → Email Templates → "Invite user") — geen Brevo-koppeling nodig, maar wel de moeite waard om die template één keer te bekijken/aan te passen naar je eigen stijl.
+
+### Beveiliging
+
+Enkel jij (admin) kan deze functie aanroepen — gecheckt via je profiel-rol, net als de andere Edge Functions. De functie kijkt eerst of er al een account met dat e-mailadres bestaat vóór ze iets aanmaakt, zodat een bestaande klant nooit per ongeluk een duplicaat-account of een overbodige tweede uitnodiging krijgt.

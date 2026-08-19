@@ -529,3 +529,15 @@ Twee toevoegingen gericht op je retainer-klanten (Shorts + Paid Ad-video + Brand
 - **"Dupliceer"-knop** in het opdrachtvenster: handig voor terugkerende opdrachten zoals de maandelijkse Shorts. Klant, briefing en deliverables worden overgenomen; status (start bij "Nieuw"), deadline, notities, Frame.io-link, contract en foto's beginnen wél telkens opnieuw — zo begin je nooit per ongeluk met een al-ondertekend contract of oude foto's op een nieuwe opdracht.
 
 Geen nieuwe SQL, geen Edge Function — beide features hergebruiken bestaande tabellen en de bestaande "opdracht toevoegen"-logica.
+
+## Fase 26 — Omslagfoto per opdracht + klantlogo op je eigen schermen (nieuw)
+
+De klantfoto (Klanten-tab, sinds Fase 17) verscheen al automatisch bovenaan bij de klant zelf, maar was op jouw eigen kant van het portaal nog nergens te zien, en per opdracht kon je nog geen eigen beeld instellen.
+
+- **Omslagfoto per opdracht**: nieuwe sectie bovenaan tab "Media & Archief" in het opdrachtvenster. Deze foto verschijnt met voorrang bovenaan bij de klant en op de projecttegel — handig voor een opdracht die net gestart is en nog geen echte foto's heeft. Leeg = het portaal valt automatisch terug op de klantfoto, en anders de algemene bedrijfsfoto.
+- **Klantfoto/logo zichtbaar op je eigen schermen**: de Klanten-tab toont nu een rond fotootje (of de eerste letter van de naam als er geen foto is) per klant, en het Dashboard toont een kleine miniatuur op een opdrachtkaart zodra er een omslagfoto of klantfoto beschikbaar is.
+
+### Eenmalig instellen
+
+1. In Supabase: SQL Editor → plak de inhoud van [`sql/024_project_cover_photo.sql`](sql/024_project_cover_photo.sql) → Run.
+2. Geen nieuwe Storage-bucket of policy nodig — dit hergebruikt de bestaande `portal-branding`-bucket van de klantfoto/bedrijfsfoto.

@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml } from './util.js';
-import { createProject, updateProject, notifyStatusChange } from './data.js';
+import { createProject, updateProject, notifyStatusChange, getPortalPhotoUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { openClientForm } from './clients.js';
@@ -127,15 +127,25 @@ async function handleDrop(projectId, newStatus) {
   }
 }
 
+function cardThumb(p) {
+  if (p.cover_photo_path) return getPortalPhotoUrl(p.cover_photo_path);
+  const client = state.clients.find((c) => c.id === p.client_id);
+  return client?.photo_path ? getPortalPhotoUrl(client.photo_path) : null;
+}
+
 function cardHtml(p) {
   const isDone = p.status === 'afgerond' || p.status === 'verzonden';
   const overdue = p.deadline && !isDone && new Date(p.deadline) < new Date(new Date().toDateString());
+  const thumb = cardThumb(p);
   return `
-    <div class="project-card" data-id="${p.id}" draggable="true">
+    <div class="project-card ${thumb ? 'has-thumb' : ''}" data-id="${p.id}" draggable="true">
       ${hasUnseenClientActivity(p) ? '<span class="card-badge-new">Nieuw</span>' : ''}
-      <div class="client">${escapeHtml(p.client_name)}</div>
-      <div class="title">${escapeHtml(p.title)}</div>
-      ${p.deadline ? `<div class="deadline ${overdue ? 'overdue' : ''}">Deadline: ${fmtDate(new Date(p.deadline))}</div>` : ''}
+      ${thumb ? `<div class="card-thumb" style="background-image:url('${escapeHtml(thumb)}')"></div>` : ''}
+      <div class="card-body">
+        <div class="client">${escapeHtml(p.client_name)}</div>
+        <div class="title">${escapeHtml(p.title)}</div>
+        ${p.deadline ? `<div class="deadline ${overdue ? 'overdue' : ''}">Deadline: ${fmtDate(new Date(p.deadline))}</div>` : ''}
+      </div>
     </div>`;
 }
 

@@ -328,6 +328,14 @@ export const uploadClientPhoto = async (clientId, file) => {
   return path;
 };
 
+// Omslagfoto per opdracht (overschrijft de klant-/bedrijfsfoto bovenaan bij dat ene project).
+export const uploadProjectCover = async (projectId, file) => {
+  const path = `project/${projectId}/${Date.now()}_${file.name}`;
+  const { error } = await sb.storage.from(PORTAL_BRANDING_BUCKET).upload(path, file);
+  if (error) throw error;
+  return path;
+};
+
 // Publieke bucket: de publieke URL is meteen bruikbaar, geen signed url nodig.
 export const getPortalPhotoUrl = (path) => {
   if (!path) return null;

@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject, uploadProjectCover, getPortalPhotoUrl, deletePortalPhoto } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -104,6 +104,22 @@ export function openProjectDetail(id) {
 
       <div class="pd-tab-panel hidden" data-pdpanel="media">
         <div class="detail-section" style="border-top:none; padding-top:0;">
+          <h3>Omslagfoto</h3>
+          <div class="empty-note">Verschijnt bovenaan bij de klant en als voorbeeld op de projecttegel — handig zolang er nog geen echte foto's staan. Leeg = klantfoto of algemene bedrijfsfoto wordt getoond.</div>
+          <div id="pd-cover-preview-wrap">
+            ${p.cover_photo_path ? `
+              <div class="portal-photo-preview">
+                <img src="${escapeAttr(getPortalPhotoUrl(p.cover_photo_path))}" alt="">
+                <button type="button" class="btn btn-ghost btn-small" id="pd-cover-remove">Verwijderen</button>
+              </div>` : ''}
+          </div>
+          <div class="field-row">
+            <input type="file" id="pd-cover-input" accept="image/*">
+            <button type="button" class="btn btn-ghost btn-small" id="pd-cover-upload">Uploaden</button>
+          </div>
+        </div>
+
+        <div class="detail-section">
           <h3>Foto's</h3>
           <div class="field-row">
             <input type="file" id="pd-photo-input" accept="image/*" multiple>
@@ -319,6 +335,41 @@ export function openProjectDetail(id) {
     e.preventDefault();
     e.stopPropagation();
     sendAdminFeedback();
+  });
+
+  document.getElementById('pd-cover-upload').addEventListener('click', async () => {
+    const input = document.getElementById('pd-cover-input');
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      if (p.cover_photo_path) await deletePortalPhoto(p.cover_photo_path).catch(() => {});
+      const path = await uploadProjectCover(id, file);
+      const updated = await updateProject(id, { cover_photo_path: path });
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      showToast('Omslagfoto geüpload');
+      closeModal();
+      openProjectDetail(id);
+      renderDashboard();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+
+  document.getElementById('pd-cover-remove')?.addEventListener('click', async () => {
+    if (!confirm('Omslagfoto verwijderen?')) return;
+    try {
+      if (p.cover_photo_path) await deletePortalPhoto(p.cover_photo_path).catch(() => {});
+      const updated = await updateProject(id, { cover_photo_path: null });
+      const idx = state.projects.findIndex((x) => x.id === id);
+      state.projects[idx] = updated;
+      showToast('Omslagfoto verwijderd');
+      closeModal();
+      openProjectDetail(id);
+      renderDashboard();
+    } catch (err) {
+      showToast(err.message, true);
+    }
   });
 
   document.getElementById('pd-photo-upload').addEventListener('click', async () => {

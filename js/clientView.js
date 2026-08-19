@@ -179,7 +179,7 @@ function renderClientList() {
 
 function tileHtml(p) {
   const photos = state.clientPhotosByProject[p.id] || [];
-  const cover = photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
+  const cover = getPortalPhotoUrl(p.cover_photo_path) || photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   return `
     <div class="client-project-tile" data-id="${p.id}">
       <div class="tile-cover" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ''}>
@@ -560,7 +560,7 @@ function feedbackTabHtml(generalFeedback) {
 }
 
 function projectDetailHtml(p, feedback, photos, concepts) {
-  const cover = photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
+  const cover = getPortalPhotoUrl(p.cover_photo_path) || photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
   const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
   const generalFeedback = feedback.filter((f) => !f.concept_id);

@@ -28,16 +28,20 @@ function renderList() {
   }
   container.innerHTML = state.clients.map((c) => {
     const projects = linkedProjects(c.id);
+    const photoUrl = getPortalPhotoUrl(c.photo_path);
     return `
       <div class="client-row" data-id="${c.id}">
-        <div class="client-row-info">
-          <div class="client-row-email">
-            ${escapeHtml(c.naam)}
-            ${c.is_retainer ? '<span class="badge-status goedgekeurd" style="margin-left:8px;">Retainer</span>' : ''}
-          </div>
-          <div class="client-row-sub">
-            ${[c.email, c.telefoon].filter(Boolean).map(escapeHtml).join(' · ') || 'Geen contactgegevens'}
-            ${c.referral_source ? ` · via ${escapeHtml(c.referral_source)}` : ''}
+        <div class="client-row-left">
+          ${photoUrl ? `<img class="client-row-avatar" src="${escapeAttr(photoUrl)}" alt="">` : '<div class="client-row-avatar client-row-avatar-placeholder">' + escapeHtml(c.naam.charAt(0).toUpperCase()) + '</div>'}
+          <div class="client-row-info">
+            <div class="client-row-email">
+              ${escapeHtml(c.naam)}
+              ${c.is_retainer ? '<span class="badge-status goedgekeurd" style="margin-left:8px;">Retainer</span>' : ''}
+            </div>
+            <div class="client-row-sub">
+              ${[c.email, c.telefoon].filter(Boolean).map(escapeHtml).join(' · ') || 'Geen contactgegevens'}
+              ${c.referral_source ? ` · via ${escapeHtml(c.referral_source)}` : ''}
+            </div>
           </div>
         </div>
         <div class="client-row-projects">

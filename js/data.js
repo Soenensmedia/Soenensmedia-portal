@@ -180,6 +180,14 @@ export const deletePhoto = async (projectId, filename) => {
   if (error) throw error;
 };
 
+export const deleteAllPhotos = async (projectId) => {
+  const { data, error } = await sb.storage.from(PHOTOS_BUCKET).list(projectId);
+  if (error) throw error;
+  if (!data || !data.length) return;
+  const { error: delErr } = await sb.storage.from(PHOTOS_BUCKET).remove(data.map((f) => `${projectId}/${f.name}`));
+  if (delErr) throw delErr;
+};
+
 // ── financiën (enkel admin) ──────────────────────────────
 export const fetchFinFacturen = () =>
   sb.from('fin_facturen').select('*').order('datum', { ascending: false }).then(unwrap);

@@ -541,3 +541,12 @@ De klantfoto (Klanten-tab, sinds Fase 17) verscheen al automatisch bovenaan bij 
 
 1. In Supabase: SQL Editor → plak de inhoud van [`sql/024_project_cover_photo.sql`](sql/024_project_cover_photo.sql) → Run.
 2. Geen nieuwe Storage-bucket of policy nodig — dit hergebruikt de bestaande `portal-branding`-bucket van de klantfoto/bedrijfsfoto.
+
+## Fase 27 — Foto's: alles verwijderen + upload-indicator (nieuw)
+
+Kleine verbetering aan de bestaande fotogalerij (tab Media & Archief): bij een opdracht opnieuw beginnen met foto's (bv. na een herfotografie) moest je voorheen elke foto apart verwijderen.
+
+- **"Alles verwijderen"**-knop naast "Uploaden": verwijdert in 1 klik alle foto's van die opdracht (met bevestiging vooraf, kan niet ongedaan gemaakt worden).
+- **Draaiend laad-icoontje** op de "Uploaden"-knop terwijl foto's aan het uploaden zijn — de knop is dan ook even niet klikbaar, zodat je niet per ongeluk dubbel upload of te vroeg wegklikt.
+
+Geen nieuwe SQL, geen configuratie nodig.

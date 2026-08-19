@@ -1,6 +1,6 @@
 import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject, uploadProjectCover, getPortalPhotoUrl, deletePortalPhoto } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, deleteAllPhotos, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject, uploadProjectCover, getPortalPhotoUrl, deletePortalPhoto } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -124,6 +124,7 @@ export function openProjectDetail(id) {
           <div class="field-row">
             <input type="file" id="pd-photo-input" accept="image/*" multiple>
             <button type="button" class="btn btn-ghost btn-small" id="pd-photo-upload">Uploaden</button>
+            <button type="button" class="btn btn-danger btn-small" id="pd-photo-delete-all">Alles verwijderen</button>
           </div>
           <div class="photo-grid" id="pd-photo-grid"><div class="empty-note">Laden...</div></div>
         </div>
@@ -376,12 +377,31 @@ export function openProjectDetail(id) {
     const input = document.getElementById('pd-photo-input');
     const files = Array.from(input.files || []);
     if (!files.length) return;
+    const btn = document.getElementById('pd-photo-upload');
+    btn.disabled = true;
+    input.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Bezig...';
     try {
       for (const file of files) {
         await uploadPhoto(id, file);
       }
       input.value = '';
       showToast(`${files.length} foto('s) geüpload`);
+      refreshPhotoGrid(id);
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      btn.disabled = false;
+      input.disabled = false;
+      btn.textContent = 'Uploaden';
+    }
+  });
+
+  document.getElementById('pd-photo-delete-all').addEventListener('click', async () => {
+    if (!confirm("Alle foto's van deze opdracht verwijderen? Dit kan niet ongedaan gemaakt worden.")) return;
+    try {
+      await deleteAllPhotos(id);
+      showToast("Foto's verwijderd");
       refreshPhotoGrid(id);
     } catch (err) {
       showToast(err.message, true);

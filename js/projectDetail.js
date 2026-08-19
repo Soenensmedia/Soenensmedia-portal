@@ -170,6 +170,13 @@ export function openProjectDetail(id) {
     });
   });
 
+  document.getElementById('pd-client-id').addEventListener('change', (e) => {
+    const client = state.clients.find((c) => c.id === e.target.value);
+    if (client?.email) {
+      document.getElementById('pd-client-email').value = client.email;
+    }
+  });
+
   document.getElementById('pd-cancel').addEventListener('click', closeModal);
 
   document.getElementById('pd-delete').addEventListener('click', async () => {

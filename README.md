@@ -590,3 +590,22 @@ Op jouw vraag: het hele portaal (admin én klant) omgebouwd van de donkere naar 
 - De "gloed"-header bij de klant (Fase 29) is aangepast: minder donker, subtieler, past beter bij een lichte kaart.
 
 Geen nieuwe SQL. Puur CSS + het logo-bestand — geen enkele functionaliteit is gewijzigd.
+
+## Fase 32 — Contentsysteem per klant (nieuw)
+
+Nieuwe tab **"Contentsysteem"**, gebaseerd op het format-skeletten-concept dat je apart had opgezet (Decaigny Selected Cars & Vans als eerste voorbeeld): per klant een eigen bank van content-ideeën, scripts, hookformules, een draaidag-planning, een b-roll-checklist en een maandelijkse 5-rollen-planner.
+
+- **Klant kiezen** bovenaan → alles daaronder is specifiek voor die klant.
+- **Ideeën**: format-kaarten met tags, filterbaar (bv. "Geen prater", "Stock als brandstof", "Werkplaats") — precies zoals in het originele concept.
+- **Scripts**: volledige shotlijsten (tijd/beeld/tekst in beeld/gesproken) + regie-notities.
+- **Hooks**: inspiratiebank van hookformules per categorie.
+- **Draaidag**: tijdsblokken voor de opnamedag met uitleg en shotlijst.
+- **B-roll**: losse checklist van shots om altijd mee te nemen.
+- **Planner**: het maandraster (Bereik/Expertise/Vertrouwen/Mens/Conversie) voor de volgende maand.
+- **"Stuur naar klant"** op elk idee, script of planner-rij: kiest een gekoppelde opdracht van die klant, optioneel met een voorbeeldreel-link erbij, en zet het meteen als "Idee/script" klaar in de bestaande goedkeuringsflow (Ideeën & Scripts) — de klant ziet en beoordeelt het zoals hij al gewend is, geen nieuw systeem voor hem.
+
+### Eenmalig instellen
+
+1. In Supabase: SQL Editor → plak en run [`sql/025_content_strategie.sql`](sql/025_content_strategie.sql) (nieuwe tabellen, admin-only).
+2. Wil je de Decaigny-data er meteen in? Maak eerst de klant **"Decaigny Selected Cars & Vans"** aan (exacte naam) via de Klanten-tab, run daarna [`sql/026_content_strategie_decaigny_data.sql`](sql/026_content_strategie_decaigny_data.sql) — vult automatisch alle 33 ideeën, 5 scripts, hookformules, draaidag en b-roll uit je concept in. Bestaat de klant nog niet, dan doet het script gewoon niets (geen foutmelding).
+3. Voor een nieuwe klant: klant aanmaken → tab Contentsysteem → klant selecteren → "Klant-info" invullen → ideeën/scripts/hooks/draaidag/b-roll zelf opbouwen (of vraag het mij in de chat, dan werk ik ze voor je uit).

@@ -355,3 +355,57 @@ export const deletePortalPhoto = async (path) => {
   const { error } = await sb.storage.from(PORTAL_BRANDING_BUCKET).remove([path]);
   if (error) throw error;
 };
+
+// ── content-strategie (per klant) ────────────────────────
+export const fetchContentStrategie = (clientId) =>
+  sb.from('content_strategie').select('*').eq('client_id', clientId).maybeSingle().then(unwrap);
+export const saveContentStrategie = (clientId, payload) =>
+  sb.from('content_strategie').upsert({ client_id: clientId, ...payload }, { onConflict: 'client_id' }).select().single().then(unwrap);
+
+export const fetchContentIdeeen = (clientId) =>
+  sb.from('content_ideeen').select('*').eq('client_id', clientId).order('volgorde').then(unwrap);
+export const createContentIdee = (payload) =>
+  sb.from('content_ideeen').insert(payload).select().single().then(unwrap);
+export const updateContentIdee = (id, payload) =>
+  sb.from('content_ideeen').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteContentIdee = (id) =>
+  sb.from('content_ideeen').delete().eq('id', id).then(unwrap);
+
+export const fetchContentScripts = (clientId) =>
+  sb.from('content_scripts').select('*').eq('client_id', clientId).order('created_at').then(unwrap);
+export const createContentScript = (payload) =>
+  sb.from('content_scripts').insert(payload).select().single().then(unwrap);
+export const updateContentScript = (id, payload) =>
+  sb.from('content_scripts').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteContentScript = (id) =>
+  sb.from('content_scripts').delete().eq('id', id).then(unwrap);
+
+export const fetchContentHookformules = (clientId) =>
+  sb.from('content_hookformules').select('*').eq('client_id', clientId).order('volgorde').then(unwrap);
+export const createContentHookformule = (payload) =>
+  sb.from('content_hookformules').insert(payload).select().single().then(unwrap);
+export const deleteContentHookformule = (id) =>
+  sb.from('content_hookformules').delete().eq('id', id).then(unwrap);
+
+export const fetchContentDraaidag = (clientId) =>
+  sb.from('content_draaidag').select('*').eq('client_id', clientId).order('volgorde').then(unwrap);
+export const createContentDraaidag = (payload) =>
+  sb.from('content_draaidag').insert(payload).select().single().then(unwrap);
+export const deleteContentDraaidag = (id) =>
+  sb.from('content_draaidag').delete().eq('id', id).then(unwrap);
+
+export const fetchContentBroll = (clientId) =>
+  sb.from('content_broll').select('*').eq('client_id', clientId).order('volgorde').then(unwrap);
+export const createContentBroll = (payload) =>
+  sb.from('content_broll').insert(payload).select().single().then(unwrap);
+export const deleteContentBroll = (id) =>
+  sb.from('content_broll').delete().eq('id', id).then(unwrap);
+
+export const fetchContentPlanner = (clientId) =>
+  sb.from('content_planner').select('*').eq('client_id', clientId).order('created_at').then(unwrap);
+export const saveContentPlannerRow = (id, payload) =>
+  id
+    ? sb.from('content_planner').update(payload).eq('id', id).select().single().then(unwrap)
+    : sb.from('content_planner').insert(payload).select().single().then(unwrap);
+export const deleteContentPlannerRow = (id) =>
+  sb.from('content_planner').delete().eq('id', id).then(unwrap);

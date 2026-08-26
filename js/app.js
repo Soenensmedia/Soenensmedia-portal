@@ -9,6 +9,7 @@ import { renderFinance } from './finance.js';
 import { renderScripting, openConceptForm, importScriptFile } from './scripting.js';
 import { renderDeadlines } from './deadlines.js';
 import { renderContent } from './content.js';
+import { renderContentStrategie } from './contentStrategie.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
 import { renderClientView, openEditNameModal } from './clientView.js';
 import { openSearchModal } from './search.js';
@@ -110,6 +111,7 @@ function switchView(view) {
   if (view === 'scripting') renderScripting();
   if (view === 'deadlines') renderDeadlines();
   if (view === 'content') renderContent();
+  if (view === 'contentstrategie') renderContentStrategie();
   if (view === 'equipment') renderEquipment();
 }
 

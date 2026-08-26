@@ -38,6 +38,7 @@ export const state = {
   allFeedback: [],
   allConcepts: [],
   equipment: [],
+  allContracts: [],
   currentView: 'dashboard',
   weekStart: startOfWeek(new Date()),
   activeProjectId: null,
@@ -53,6 +54,7 @@ export const state = {
   clientFacturen: [],
   clientOffertes: [],
   clientFinSettings: {},
+  clientContracts: [],
 };
 
 export function startOfWeek(date) {

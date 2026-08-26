@@ -68,14 +68,21 @@
       <span class="brand-name">SoenensMedia</span>
     </div>
     <div class="tabs">
-      <button class="tab-btn" data-view="dashboard">Dashboard</button>
-      <button class="tab-btn" data-view="agenda">Agenda</button>
-      <button class="tab-btn" data-view="deadlines">Deadlines</button>
-      <button class="tab-btn" data-view="uren">Uren</button>
-      <button class="tab-btn" data-view="clients">Klanten</button>
-      <button class="tab-btn" data-view="finance">Financiën</button>
-      <button class="tab-btn" data-view="contentstrategie">Contentsysteem</button>
-      <button class="tab-btn" data-view="equipment">Equipment</button>
+      <div class="tabs-group">
+        <button class="tab-btn" data-view="dashboard">Dashboard</button>
+        <button class="tab-btn" data-view="agenda">Agenda</button>
+        <button class="tab-btn" data-view="deadlines">Deadlines</button>
+        <button class="tab-btn" data-view="uren">Uren</button>
+      </div>
+      <div class="tabs-group">
+        <button class="tab-btn" data-view="clients">Klanten</button>
+        <button class="tab-btn" data-view="contentstrategie">Contentsysteem</button>
+        <button class="tab-btn" data-view="contracts">Contracten</button>
+      </div>
+      <div class="tabs-group">
+        <button class="tab-btn" data-view="finance">Financiën</button>
+        <button class="tab-btn" data-view="equipment">Equipment</button>
+      </div>
     </div>
     <button class="btn-icon" id="global-search-btn" title="Zoeken">🔍</button>
     <button class="btn btn-ghost btn-small" id="logout-btn">Uitloggen</button>
@@ -157,6 +164,14 @@
         <h1>Contentsysteem</h1>
       </div>
       <div id="content-strategie-container"></div>
+    </section>
+
+    <!-- RETAINER CONTRACTEN -->
+    <section id="view-contracts" class="view hidden">
+      <div class="view-header">
+        <h1>Contracten</h1>
+      </div>
+      <div id="contracts-container"></div>
     </section>
 
     <!-- EQUIPMENT -->

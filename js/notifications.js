@@ -61,3 +61,29 @@ export function markConceptSeen(conceptId) {
     /* privémodus o.i.d. — geen probleem, badge blijft dan gewoon staan */
   }
 }
+
+// Zelfde aanpak voor door de klant ondertekende contracten.
+const SEEN_CONTRACTS_KEY = 'sm_admin_seen_contracts';
+
+function getSeenContractIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_CONTRACTS_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+export function isContractSignedUnseen(contract) {
+  if (contract.status !== 'ondertekend') return false;
+  return !getSeenContractIds().has(contract.id);
+}
+
+export function markContractSeen(contractId) {
+  try {
+    const seen = getSeenContractIds();
+    seen.add(contractId);
+    localStorage.setItem(SEEN_CONTRACTS_KEY, JSON.stringify(Array.from(seen)));
+  } catch {
+    /* privémodus o.i.d. — geen probleem, badge blijft dan gewoon staan */
+  }
+}

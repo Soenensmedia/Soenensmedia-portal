@@ -1,3 +1,5 @@
+import { contractArticlesHtml } from './contractDoc.js';
+
 const eur = (n) => '€ ' + (Math.round((n || 0) * 100) / 100).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDateNL = (iso) => (iso ? new Date(iso).toLocaleDateString('nl-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
 
@@ -243,6 +245,104 @@ export function generateAgreementCopyPdf(project, settings) {
     `Digitaal ondertekend via het ${settings.bedrijfsnaam || 'SoenensMedia'}-klantportaal op ${fmtDateNL(project.agreement_signed_at)} door ${project.agreement_signed_name || '—'}.`,
     marginX, y, { maxWidth: 170 },
   );
+
+  return doc;
+}
+
+export function generateRetainerContractPdf(contract) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const marginX = 20;
+  const pageBottom = 280;
+  let y = 22;
+
+  function ensureSpace(needed) {
+    if (y + needed > pageBottom) {
+      doc.addPage();
+      y = 22;
+    }
+  }
+
+  // Contracttekst wordt geparsed uit dezelfde HTML als de portaal-weergave
+  // (contractArticlesHtml) — zo blijft de PDF altijd exact gesynchroniseerd
+  // met wat admin en klant op het scherm zien, zonder de tekst te dupliceren.
+  const wrap = document.createElement('div');
+  wrap.innerHTML = contractArticlesHtml(contract);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(20);
+  doc.text('Retainerovereenkomst', marginX, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(110);
+  doc.text(`Ref. ${contract.ref || '—'} · Soenens Media`, marginX, y);
+  y += 10;
+  doc.setDrawColor(220);
+  doc.line(marginX, y, 190, y);
+  y += 8;
+
+  wrap.querySelectorAll('.doc-art').forEach((art) => {
+    const heading = art.querySelector('.doc-art-h')?.textContent.replace(/\s+/g, ' ').trim();
+    ensureSpace(14);
+    if (heading) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.setTextColor(20);
+      doc.text(heading, marginX, y);
+      y += 7;
+    }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40);
+
+    art.querySelectorAll(':scope > p, :scope > .doc-parties, :scope > .doc-pack-card, :scope > .doc-totals').forEach((block) => {
+      const text = block.textContent.replace(/\s+/g, ' ').trim();
+      if (!text) return;
+      const lines = doc.splitTextToSize(text, 170);
+      ensureSpace(lines.length * 4.6 + 4);
+      doc.text(lines, marginX, y);
+      y += lines.length * 4.6 + 4;
+    });
+    y += 3;
+  });
+
+  // ── handtekeningen ──
+  ensureSpace(60);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(20);
+  doc.text('11 Handtekeningen', marginX, y);
+  y += 10;
+
+  const sigY = y;
+  [
+    { label: 'Voor Soenens Media', img: contract.sm_sig_image, name: contract.sm_sig_name, role: contract.sm_sig_role, date: contract.sm_signed_at, x: marginX },
+    { label: 'Voor de klant', img: contract.cl_sig_image, name: contract.cl_sig_name, role: contract.cl_sig_role, date: contract.cl_signed_at, x: 110 },
+  ].forEach((sig) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(110);
+    doc.text(sig.label, sig.x, sigY);
+    if (sig.img) {
+      try { doc.addImage(sig.img, 'PNG', sig.x, sigY + 3, 70, 26); } catch { /* ongeldige data-url, sla over */ }
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(20);
+    doc.text(sig.name || '—', sig.x, sigY + 33);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110);
+    doc.text([sig.role, sig.date ? fmtDateNL(sig.date) : null].filter(Boolean).join(' · ') || 'Nog niet ondertekend', sig.x, sigY + 38);
+  });
+  y = sigY + 46;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(140);
+  doc.text('Elektronische ondertekening, gelijkwaardig aan een handgeschreven handtekening (Verordening (EU) nr. 910/2014 — eIDAS).', marginX, y, { maxWidth: 170 });
 
   return doc;
 }

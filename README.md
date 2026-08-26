@@ -665,4 +665,23 @@ Ideeën en scripts konden tot nu enkel aangemaakt of verwijderd worden — niet 
 
 Geen nieuwe SQL, geen configuratie nodig.
 
+## Fase 38 — Retainer-contracten met ondertekening (nieuw)
+
+Nieuw tabblad **"Contracten"**, gebaseerd op het contract-artifact dat je liet nakijken: een volledige Nederlandstalige retainerovereenkomst (11 artikelen — partijen, voorwerp, pakket & vergoeding, looptijd/opzegging, betaling, werkwijze, IP-rechten, aansprakelijkheid, vertrouwelijkheid, slotbepalingen, handtekeningen), nu opgemaakt en verstuurd vanuit het portaal in plaats van een los bestand.
+
+**Hoe het werkt:**
+1. Kies een klant, klik "+ Nieuw contract". Kies een pakket (Reels / Paid & Brand / Alles-in-één / op maat) — prijs en deliverables worden voorgevuld en blijven aanpasbaar. Onder "Geavanceerd" staan alle overige contractvelden (adressen, BTW-nummers, uurtarief, betalingstermijn, rechtbank, ...), voorgevuld vanuit de klantfiche en je bedrijfsgegevens (Financiën → Instellingen). Onderaan zie je meteen een volledig voorbeeld van het contract.
+2. Open het opgeslagen contract, teken zelf (muis of vinger) namens Soenens Media.
+3. "Versturen naar klant" — vereist een opdracht die al aan een klant-portaalaccount gekoppeld is (net als bij "Stuur naar klant" in het Contentsysteem).
+4. De klant krijgt het contract meteen te zien bij het volgende bezoek aan het portaal (blokkerend scherm, net als bij het bestaande contract-op-maat-systeem), leest het volledige document, tekent zelf met muis of vinger, en het contract staat vanaf dan als "Ondertekend" bij jullie beiden — met een PDF-download-knop (inclusief beide handtekeningen) op je eigen Contracten-tab en bij de klant onder Documenten.
+5. Zodra de klant tekent, verschijnt dat in "Aandacht nodig" op je dashboard.
+
+### Eenmalig instellen
+1. In Supabase: SQL Editor → plak en run [`sql/028_client_contracts.sql`](sql/028_client_contracts.sql).
+2. Geen Edge Function nodig — dit werkt zonder e-mailnotificatie; de klant ziet het vanzelf bij het volgende bezoek.
+
+## Fase 39 — Tabbladen gegroepeerd + Contracten-tab (nieuw)
+
+De 8 tabbladen bovenaan zijn ingedeeld in 3 logische groepen (met een dun lijntje ertussen): **Werk** (Dashboard, Agenda, Deadlines, Uren), **Klant** (Klanten, Contentsysteem, Contracten) en **Bedrijf** (Financiën, Equipment). Puur visueel — geen enkele tab is verplaatst of hernoemd, dit maakt de balk enkel overzichtelijker.
+
 Geen nieuwe SQL, geen configuratie nodig.

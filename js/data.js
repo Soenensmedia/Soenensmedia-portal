@@ -418,3 +418,17 @@ export const saveContentPlannerRow = (id, payload) =>
     : sb.from('content_planner').insert(payload).select().single().then(unwrap);
 export const deleteContentPlannerRow = (id) =>
   sb.from('content_planner').delete().eq('id', id).then(unwrap);
+
+// ── retainer-contracten ───────────────────────────────
+export const fetchClientContracts = (clientId) =>
+  sb.from('client_contracts').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).then(unwrap);
+export const fetchAllClientContracts = () =>
+  sb.from('client_contracts').select('*').order('created_at', { ascending: false }).then(unwrap);
+export const createClientContract = (payload) =>
+  sb.from('client_contracts').insert(payload).select().single().then(unwrap);
+export const updateClientContract = (id, payload) =>
+  sb.from('client_contracts').update(payload).eq('id', id).select().single().then(unwrap);
+export const deleteClientContract = (id) =>
+  sb.from('client_contracts').delete().eq('id', id).then(unwrap);
+export const signClientContract = (id, name, role, signatureImg) =>
+  sb.rpc('sign_client_contract', { p_contract_id: id, p_signed_name: name, p_signed_role: role, p_signature_img: signatureImg }).then(unwrap);

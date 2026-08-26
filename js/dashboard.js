@@ -6,9 +6,10 @@ import { openProjectDetail } from './projectDetail.js';
 import { openClientForm } from './clients.js';
 import { openEquipmentForm } from './equipment.js';
 import { showToast } from './toast.js';
-import { hasUnseenClientActivity, isConceptApprovalUnseen, markConceptSeen } from './notifications.js';
+import { hasUnseenClientActivity, isConceptApprovalUnseen, markConceptSeen, isContractSignedUnseen, markContractSeen } from './notifications.js';
 import { TYPE_COLOR_VAR } from './agenda.js';
 import { openContentStrategieForClient } from './contentStrategie.js';
+import { openContractById } from './contracts.js';
 
 const RETAINER_RENEWAL_WARNING_DAYS = 30;
 const ONDERHOUD_WARNING_DAYS = 30;
@@ -118,6 +119,12 @@ function attentionItems() {
     });
   }
 
+  (state.allContracts || []).forEach((ct) => {
+    if (!isContractSignedUnseen(ct)) return;
+    const client = state.clients.find((c) => c.id === ct.client_id);
+    items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title: ct.pack_name || 'Contract', sub: client?.naam || 'Contract', reason: 'Ondertekend door klant' });
+  });
+
   return items;
 }
 
@@ -128,7 +135,7 @@ function attentionHtml() {
     <div class="attention-panel">
       <div class="attention-title">Aandacht nodig (${items.length})</div>
       ${items.map((it) => `
-        <div class="attention-row" data-type="${it.type}" data-id="${it.id}" ${it.projectId ? `data-project-id="${it.projectId}"` : ''}>
+        <div class="attention-row" data-type="${it.type}" data-id="${it.id}" ${it.projectId ? `data-project-id="${it.projectId}"` : ''} ${it.clientId ? `data-client-id="${it.clientId}"` : ''}>
           <span class="attention-project">${escapeHtml(it.title)} <span class="attention-client">— ${escapeHtml(it.sub)}</span></span>
           <span class="attention-reason">${escapeHtml(it.reason)}</span>
         </div>`).join('')}
@@ -164,6 +171,13 @@ export function renderDashboard() {
           document.getElementById('view-contentstrategie').classList.remove('hidden');
           document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === 'contentstrategie'));
           openContentStrategieForClient(el.dataset.id);
+        } else if (el.dataset.type === 'contract') {
+          markContractSeen(el.dataset.id);
+          document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
+          document.getElementById('view-contracts').classList.remove('hidden');
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === 'contracts'));
+          openContractById(el.dataset.clientId, el.dataset.id);
+          renderDashboard();
         } else {
           openProjectDetail(el.dataset.id);
         }

@@ -1,6 +1,6 @@
 import { signIn, signOut, onAuthChange, requestPasswordReset, updatePassword, getSession } from './auth.js';
 import { state } from './state.js';
-import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback, fetchAllConcepts, fetchEquipment } from './data.js';
+import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback, fetchAllConcepts, fetchEquipment, fetchAllClientContracts } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
@@ -8,6 +8,7 @@ import { renderClients, openClientForm, openPortalContentEditor } from './client
 import { renderFinance } from './finance.js';
 import { renderDeadlines } from './deadlines.js';
 import { renderContentStrategie } from './contentStrategie.js';
+import { renderContracts } from './contracts.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
 import { renderClientView, openEditNameModal } from './clientView.js';
 import { openSearchModal } from './search.js';
@@ -102,6 +103,7 @@ function switchView(view) {
   if (view === 'finance') renderFinance();
   if (view === 'deadlines') renderDeadlines();
   if (view === 'contentstrategie') renderContentStrategie();
+  if (view === 'contracts') renderContracts();
   if (view === 'equipment') renderEquipment();
 }
 
@@ -141,6 +143,11 @@ async function showAppShell() {
     state.allConcepts = await fetchAllConcepts();
   } catch {
     state.allConcepts = [];
+  }
+  try {
+    state.allContracts = await fetchAllClientContracts();
+  } catch {
+    state.allContracts = [];
   }
   switchView('dashboard');
 }

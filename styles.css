@@ -121,7 +121,9 @@ label { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; display:
 .topbar-left img { height: 32px; }
 .topbar-left .brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: .06em; color: var(--text); }
 
-.tabs { display: flex; gap: 4px; }
+.tabs { display: flex; align-items: center; gap: 10px; }
+.tabs-group { display: flex; gap: 4px; padding-right: 10px; border-right: 1px solid var(--line); }
+.tabs-group:last-child { border-right: none; padding-right: 0; }
 .tab-btn {
   background: transparent; color: var(--text-dim);
   font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 6px;
@@ -249,6 +251,7 @@ table.log-table tr:last-child td { border-bottom: none; }
   width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 26px;
   box-shadow: 0 20px 60px rgba(0,0,0,.15);
 }
+.modal.modal-wide { max-width: 920px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
 .modal-header h2 { font-size: 1.3rem; color: var(--text); }
 .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
@@ -753,3 +756,71 @@ table.cs-plan td { border-bottom: 1px solid var(--line); padding: 10px; vertical
 
 .cs-root .btn { border-radius: 0; }
 .cs-root input, .cs-root select, .cs-root textarea { border-radius: 0; }
+
+/* ══════════ RETAINER CONTRACTEN ══════════ */
+.contracts-client-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.contract-list { display: flex; flex-direction: column; gap: 10px; }
+.contract-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; cursor: pointer;
+}
+.contract-row:hover { border-color: var(--red); }
+.contract-row-title { font-weight: 600; }
+.contract-row-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.contract-status { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 9px; border-radius: 20px; font-weight: 600; }
+.contract-status.concept { background: var(--paneld); color: var(--text-dim); }
+.contract-status.verzonden { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.contract-status.ondertekend { background: #e6f4ea; color: #1a7a3e; border: 1px solid #a8d5b5; }
+
+.doc-sheet {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 36px 40px; max-width: 720px; margin: 0 auto;
+}
+.doc-masthead { text-align: center; padding-bottom: 20px; border-bottom: 2px solid var(--text); margin-bottom: 24px; }
+.doc-brand { font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: .18em; color: var(--text-dim); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+.doc-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); display: inline-block; }
+.doc-masthead h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: .03em; }
+.doc-sub { color: var(--text-dim); font-size: 13.5px; margin-top: 4px; }
+.doc-ref { display: flex; justify-content: center; gap: 16px; font-size: 11px; color: var(--text-faint); margin-top: 12px; flex-wrap: wrap; }
+.doc-art { margin-bottom: 22px; }
+.doc-art-h { display: flex; align-items: baseline; gap: 10px; font-size: 15px; letter-spacing: .04em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.doc-n { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--red); font-weight: 700; letter-spacing: 0; }
+.doc-art p { font-size: 13.5px; line-height: 1.65; color: var(--text); margin-bottom: 10px; }
+.doc-art p:last-child { margin-bottom: 0; }
+.doc-small { font-size: 12px; color: var(--text-dim); }
+.doc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 640px) { .doc-parties { grid-template-columns: 1fr; } }
+.doc-party { display: flex; flex-direction: column; gap: 3px; }
+.doc-role { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+.doc-line { font-size: 13px; }
+.doc-name { font-weight: 700; font-size: 14px; }
+.doc-pack-card { border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; background: var(--paneld); }
+.doc-pack-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.doc-kicker { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+.doc-pname { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: .03em; }
+.doc-price { text-align: right; }
+.doc-amt { font-size: 22px; font-weight: 700; }
+.doc-per { display: block; font-size: 11px; color: var(--text-dim); }
+.doc-deliver { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.doc-deliver li { font-size: 13px; padding-left: 16px; position: relative; }
+.doc-deliver li::before { content: '—'; position: absolute; left: 0; color: var(--red); }
+.doc-totals { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.doc-totals div { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding-bottom: 4px; }
+.doc-totals div:last-child { font-weight: 700; border-bottom: none; }
+
+.doc-signs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+@media (max-width: 640px) { .doc-signs { grid-template-columns: 1fr; } }
+.doc-sign { border: 1px solid var(--line); border-radius: 6px; padding: 14px; }
+.doc-sign-cap { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+.doc-padwrap { position: relative; border: 1px dashed var(--line); border-radius: 4px; background: var(--paneld); }
+.doc-pad { width: 100%; height: 110px; display: block; touch-action: none; cursor: crosshair; }
+.doc-padhint { position: absolute; bottom: 6px; left: 8px; font-size: 11px; color: var(--text-faint); pointer-events: none; }
+.doc-pad.has-ink + .doc-padhint { display: none; }
+.doc-padclear { position: absolute; top: 6px; right: 6px; font-size: 11px; background: none; border: none; color: var(--text-dim); cursor: pointer; }
+.doc-sigfields { display: flex; gap: 8px; margin-top: 8px; }
+.doc-sigfields input { flex: 1; font-size: 12.5px; padding: 6px 8px; }
+.doc-sig-preview { max-height: 70px; }
+.doc-sig-done { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+.doc-legalnote { font-size: 11px; color: var(--text-faint); margin-top: 10px; }
+.doc-agree { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-dim); margin: 14px 0; }
+.doc-agree input { width: auto; margin-top: 2px; }

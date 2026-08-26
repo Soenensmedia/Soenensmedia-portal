@@ -1,8 +1,10 @@
 import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate } from './state.js';
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
-import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl, notifyAdminFeedback } from './data.js';
+import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl, notifyAdminFeedback, fetchClientContracts, signClientContract } from './data.js';
 import { openModal, closeModal } from './modal.js';
-import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, downloadPdf } from './pdf.js';
+import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, generateRetainerContractPdf, downloadPdf } from './pdf.js';
+import { contractArticlesHtml } from './contractDoc.js';
+import { initSignaturePad } from './signaturePad.js';
 import { showToast } from './toast.js';
 
 export async function renderClientView() {
@@ -51,6 +53,14 @@ export async function renderClientView() {
   }
 
   state.clientProjects = projects;
+
+  try {
+    const clientIds = [...new Set(projects.map((p) => p.client_id).filter(Boolean))];
+    const perClient = await Promise.all(clientIds.map((id) => fetchClientContracts(id).catch(() => [])));
+    state.clientContracts = perClient.flat();
+  } catch {
+    state.clientContracts = [];
+  }
 
   if (!projects.length) {
     container.innerHTML = '<div class="empty-note">Er is nog geen project aan je account gekoppeld. Neem contact op met SoenensMedia.</div>';
@@ -141,6 +151,12 @@ function clientAttentionItems() {
       items.push({ id: p.id, title: p.title, reason: 'Nieuw antwoord van SoenensMedia' });
     }
   });
+
+  (state.clientContracts || []).forEach((ct) => {
+    if (ct.status !== 'verzonden') return;
+    items.push({ type: 'contract', id: ct.id, title: ct.pack_name || 'Retainer-contract', reason: 'Contract wacht op jouw ondertekening' });
+  });
+
   return items;
 }
 
@@ -151,7 +167,7 @@ function clientAttentionHtml() {
     <div class="attention-panel">
       <div class="attention-title">Voor jou te doen (${items.length})</div>
       ${items.map((it) => `
-        <div class="attention-row" data-id="${it.id}">
+        <div class="attention-row" data-type="${it.type || 'project'}" data-id="${it.id}">
           <span class="attention-project">${escapeHtml(it.title)}</span>
           <span class="attention-reason">${escapeHtml(it.reason)}</span>
         </div>`).join('')}
@@ -222,7 +238,14 @@ function renderClientList() {
   });
 
   container.querySelectorAll('.attention-row').forEach((el) => {
-    el.addEventListener('click', () => renderClientProjectDetail(el.dataset.id));
+    el.addEventListener('click', () => {
+      if (el.dataset.type === 'contract') {
+        const contract = state.clientContracts.find((c) => c.id === el.dataset.id);
+        if (contract) openContractSignModal(contract);
+      } else {
+        renderClientProjectDetail(el.dataset.id);
+      }
+    });
   });
 
   document.getElementById('welcome-guide-toggle')?.addEventListener('click', (e) => {
@@ -230,6 +253,9 @@ function renderClientList() {
     const collapsed = textEl.classList.toggle('collapsed');
     e.target.textContent = collapsed ? 'Lees meer' : 'Lees minder';
   });
+
+  const pendingContract = (state.clientContracts || []).find((c) => c.status === 'verzonden');
+  if (pendingContract) openContractSignModal(pendingContract);
 }
 
 function tileHtml(p) {
@@ -326,6 +352,60 @@ function openAgreementSignModal(p) {
       closeModal();
       showToast('Overeenkomst ondertekend');
       renderClientProjectDetail(p.id);
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  });
+}
+
+async function refreshClientContracts() {
+  const clientIds = [...new Set(state.clientProjects.map((p) => p.client_id).filter(Boolean))];
+  const perClient = await Promise.all(clientIds.map((id) => fetchClientContracts(id).catch(() => [])));
+  state.clientContracts = perClient.flat();
+}
+
+function openContractSignModal(contract) {
+  openModal(`
+    <div class="modal-header"><h2>Contract ondertekenen</h2></div>
+    <div class="doc-sheet" style="max-width:none; padding:20px; max-height:380px; overflow-y:auto;">
+      ${contractArticlesHtml(contract)}
+    </div>
+    <form id="contract-sign-form" style="margin-top:16px;">
+      <div class="doc-padwrap">
+        <canvas class="doc-pad" id="cs-pad"></canvas>
+        <span class="doc-padhint">Teken hier met muis of vinger</span>
+        <button type="button" class="doc-padclear" id="cs-clear">Wissen</button>
+      </div>
+      <div class="doc-sigfields">
+        <input type="text" id="cs-name" placeholder="Volledige naam" required>
+        <input type="text" id="cs-role" placeholder="Functie">
+      </div>
+      <label class="doc-agree">
+        <input type="checkbox" id="cs-agree" required>
+        <span>Ik verklaar deze overeenkomst gelezen en goedgekeurd te hebben, en aanvaard het pakket, de prijs en de voorwaarden zoals hierboven beschreven.</span>
+      </label>
+      <button type="submit" class="btn btn-red">Ondertekenen</button>
+    </form>
+  `, { dismissible: false, wide: true });
+
+  const pad = initSignaturePad(document.getElementById('cs-pad'));
+  document.getElementById('cs-clear').addEventListener('click', () => pad.clear());
+
+  document.getElementById('contract-sign-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (pad.isEmpty()) { showToast('Teken eerst je handtekening', true); return; }
+    const name = document.getElementById('cs-name').value.trim();
+    if (!name) return;
+    try {
+      await signClientContract(contract.id, name, document.getElementById('cs-role').value.trim() || null, pad.toDataURL());
+      await refreshClientContracts();
+      closeModal();
+      showToast('Contract ondertekend');
+      if (state.activeClientProjectId) {
+        renderClientProjectDetail(state.activeClientProjectId);
+      } else {
+        renderClientList();
+      }
     } catch (err) {
       showToast(err.message, true);
     }
@@ -587,8 +667,19 @@ function contractTabHtml(p) {
       : ''}`;
 }
 
-function documentenTabHtml(p, offertes, facturen) {
+function retainerContractsSectionHtml(contracts) {
+  return contracts.map((c) => `
+    <div class="detail-list-item">
+      <span>${escapeHtml(c.pack_name || 'Retainer-contract')} — ${escapeHtml(c.ref || '')} <span class="badge-status ${c.status === 'ondertekend' ? 'goedgekeurd' : 'in_afwachting'}">${c.status === 'ondertekend' ? 'Ondertekend' : 'Wacht op ondertekening'}</span></span>
+      ${c.status === 'ondertekend'
+        ? `<button type="button" class="btn btn-ghost btn-small client-contract-pdf" data-id="${c.id}">Download</button>`
+        : `<button type="button" class="btn btn-red btn-small client-contract-sign" data-id="${c.id}">Onderteken</button>`}
+    </div>`).join('');
+}
+
+function documentenTabHtml(p, offertes, facturen, retainerContracts) {
   const hasContract = !!(p.agreement_content || p.agreement_bestand_path);
+  const hasRetainer = retainerContracts.length > 0;
   const hasFinance = offertes.length > 0 || facturen.length > 0;
   return `
     ${hasContract ? `
@@ -596,8 +687,13 @@ function documentenTabHtml(p, offertes, facturen) {
         <h3>Contract</h3>
         ${contractTabHtml(p)}
       </div>` : ''}
-    ${hasFinance ? `
+    ${hasRetainer ? `
       <div class="detail-section" ${hasContract ? '' : 'style="border-top:none; padding-top:0;"'}>
+        <h3>Retainer-contract</h3>
+        ${retainerContractsSectionHtml(retainerContracts)}
+      </div>` : ''}
+    ${hasFinance ? `
+      <div class="detail-section" ${hasContract || hasRetainer ? '' : 'style="border-top:none; padding-top:0;"'}>
         <h3>Offertes & Facturen</h3>
         ${financeTabHtml(offertes, facturen)}
       </div>` : ''}`;
@@ -618,12 +714,13 @@ function projectDetailHtml(p, feedback, photos, concepts) {
   const cover = getPortalPhotoUrl(p.cover_photo_path) || photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
   const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
+  const retainerContracts = (state.clientContracts || []).filter((c) => c.client_id === p.client_id && c.status !== 'concept');
   const generalFeedback = feedback.filter((f) => !f.concept_id);
 
-  const hasDocumenten = !!(p.agreement_content || p.agreement_bestand_path) || facturen.length > 0 || offertes.length > 0;
+  const hasDocumenten = !!(p.agreement_content || p.agreement_bestand_path) || facturen.length > 0 || offertes.length > 0 || retainerContracts.length > 0;
   const tabCounts = {
     media: concepts.length + photos.length,
-    documenten: facturen.length + offertes.length,
+    documenten: facturen.length + offertes.length + retainerContracts.length,
     feedback: generalFeedback.length,
   };
 
@@ -660,7 +757,7 @@ function projectDetailHtml(p, feedback, photos, concepts) {
       <div class="client-tab-panel">
         ${activeTab === 'overzicht' ? overzichtTabHtml(p) : ''}
         ${activeTab === 'media' ? mediaTabHtml(p, photos, concepts, feedback) : ''}
-        ${activeTab === 'documenten' ? documentenTabHtml(p, offertes, facturen) : ''}
+        ${activeTab === 'documenten' ? documentenTabHtml(p, offertes, facturen, retainerContracts) : ''}
         ${activeTab === 'feedback' ? feedbackTabHtml(generalFeedback) : ''}
       </div>
     </div>`;
@@ -688,6 +785,25 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
     } catch (err) {
       showToast('Kon kopie niet genereren: ' + err.message, true);
     }
+  });
+
+  document.querySelectorAll('.client-contract-sign').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const contract = state.clientContracts.find((c) => c.id === btn.dataset.id);
+      if (contract) openContractSignModal(contract);
+    });
+  });
+  document.querySelectorAll('.client-contract-pdf').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const contract = state.clientContracts.find((c) => c.id === btn.dataset.id);
+      if (!contract) return;
+      try {
+        const doc = generateRetainerContractPdf(contract);
+        downloadPdf(doc, `${(contract.ref || 'retainer-contract')}.pdf`);
+      } catch (err) {
+        showToast('Kon pdf niet genereren: ' + err.message, true);
+      }
+    });
   });
 
   const form = document.getElementById('fb-form');

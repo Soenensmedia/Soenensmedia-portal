@@ -143,20 +143,24 @@ async function openContractBuilder(existing) {
             ${Object.values(CONTRACT_PACKS).map((p) => `<option value="${p.key}" ${p.key === packKey ? 'selected' : ''}>${escapeHtml(p.label)}</option>`).join('')}
           </select>
         </div>
-        <div class="field"><label>Referentie</label><input type="text" id="ctf-ref" value="${escapeAttr(draft.ref)}"></div>
+        <div class="field"><label>Naam van het pakket (zoals getoond in het contract)</label><input type="text" id="ctf-packname" value="${escapeAttr(draft.pack_name)}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Prijs per maand (excl. btw)</label><input type="number" min="0" step="50" id="ctf-price" value="${draft.price}"></div>
-        <div class="field"><label>Startdatum</label><input type="date" id="ctf-start" value="${escapeAttr(draft.start_date)}"></div>
+        <div class="field"><label>Referentie</label><input type="text" id="ctf-ref" value="${escapeAttr(draft.ref)}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Looptijd (maanden)</label><input type="number" min="1" id="ctf-term" value="${draft.term}"></div>
         <div class="field"><label>Opzegtermijn (maanden)</label><input type="number" min="0" id="ctf-notice" value="${draft.notice}"></div>
       </div>
-      <div class="field"><label>Deliverables (1 per regel)</label><textarea id="ctf-items" rows="6">${escapeHtml(draft.items.join('\n'))}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Startdatum</label><input type="date" id="ctf-start" value="${escapeAttr(draft.start_date)}"></div>
+        <div class="field"><label>Rondes feedback per video</label><input type="number" min="0" id="ctf-revisions" value="${draft.fields.revisions}"></div>
+      </div>
+      <div class="field"><label>Deliverables (1 per regel — vrij aan te passen, ook bij "Op maat")</label><textarea id="ctf-items" rows="6">${escapeHtml(draft.items.join('\n'))}</textarea></div>
 
-      <details style="margin:14px 0;">
-        <summary style="cursor:pointer; font-size:12.5px; color:var(--text-dim);">Geavanceerd — partijgegevens en contractvoorwaarden</summary>
+      <details open style="margin:14px 0;">
+        <summary style="cursor:pointer; font-size:12.5px; color:var(--text-dim);">Overige contractvoorwaarden en partijgegevens</summary>
         <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
           <div class="field-row">
             <div class="field"><label>Naam Soenens Media</label><input type="text" id="ctf-smName" value="${escapeAttr(draft.fields.smName)}"></div>
@@ -180,15 +184,15 @@ async function openContractBuilder(existing) {
           </div>
           <div class="field-row">
             <div class="field"><label>Draaidag boeken (werkdagen vooraf)</label><input type="number" id="ctf-booking" value="${draft.fields.booking}"></div>
-            <div class="field"><label>Rondes feedback</label><input type="number" id="ctf-revisions" value="${draft.fields.revisions}"></div>
-          </div>
-          <div class="field-row">
             <div class="field"><label>Archiveringstermijn ruw materiaal (maanden)</label><input type="number" id="ctf-archive" value="${draft.fields.archive}"></div>
-            <div class="field"><label>Bevoegde rechtbank</label><input type="text" id="ctf-court" value="${escapeAttr(draft.fields.court)}"></div>
           </div>
           <div class="field-row">
+            <div class="field"><label>Bevoegde rechtbank</label><input type="text" id="ctf-court" value="${escapeAttr(draft.fields.court)}"></div>
             <div class="field"><label>Opgemaakt te</label><input type="text" id="ctf-plaats" value="${escapeAttr(draft.fields.plaats)}"></div>
+          </div>
+          <div class="field-row">
             <div class="field"><label>Versie</label><input type="text" id="ctf-ver" value="${escapeAttr(draft.fields.ver)}"></div>
+            <div></div>
           </div>
         </div>
       </details>
@@ -213,6 +217,7 @@ async function openContractBuilder(existing) {
 
   function readDraft() {
     draft.pack_key = document.getElementById('ctf-pack').value;
+    draft.pack_name = document.getElementById('ctf-packname').value.trim();
     draft.ref = document.getElementById('ctf-ref').value.trim();
     draft.price = Number(document.getElementById('ctf-price').value) || 0;
     draft.start_date = document.getElementById('ctf-start').value || null;
@@ -224,7 +229,6 @@ async function openContractBuilder(existing) {
       if (el) draft.fields[k] = el.value.trim();
     });
     draft.fields.plaats2 = draft.fields.plaats;
-    draft.pack_name = CONTRACT_PACKS[draft.pack_key]?.name || draft.pack_name;
   }
   function refreshPreview() {
     readDraft();
@@ -236,6 +240,7 @@ async function openContractBuilder(existing) {
     const pack = CONTRACT_PACKS[e.target.value];
     document.getElementById('ctf-price').value = pack.price;
     document.getElementById('ctf-items').value = pack.items.join('\n');
+    document.getElementById('ctf-packname').value = pack.name;
     refreshPreview();
   });
 

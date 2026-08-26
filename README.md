@@ -702,3 +702,13 @@ De bestaande cijferkaartjes (winstmarge, reserve, vaste kosten, gem. projectwaar
 
 ### Eenmalig instellen
 Geen SQL — enkel een nieuwe externe bibliotheek (Chart.js, via CDN, zelfde manier als de bestaande PDF/zip-bibliotheken) toegevoegd in `index.html`. Gewoon de map opnieuw pushen/deployen, verder niets te doen.
+
+## Fase 41 — Meer per-contract instelbaar (op vraag)
+
+Op het contract-bouwformulier stonden "Rondes feedback" en de pakketnaam weggestopt achter een ingeklapt "Geavanceerd"-sectie — niet handig als je net per contract iets als het aantal revisierondes wil aanpassen. Nu:
+
+- **Rondes feedback** staat gewoon bij de hoofdvelden, meteen zichtbaar.
+- **Pakketnaam is altijd vrij te wijzigen** — ook bij "Op maat": kies je dat pakket, dan kan je zelf een eigen naam intikken (bv. "Foto + Video Retainer") in plaats van vast te zitten aan "Pakket op maat".
+- De sectie met adressen/BTW-nummers/uurtarief/rechtbank/... staat nu standaard open (niet meer ingeklapt), zodat je meteen ziet wat er allemaal per contract aan te passen is.
+
+Geen nieuwe SQL, geen configuratie nodig.

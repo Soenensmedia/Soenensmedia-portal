@@ -30,6 +30,7 @@ let cache = { strategie: null, ideeen: [], scripts: [], hooks: [], draaidag: [],
 
 export async function renderContentStrategie() {
   const container = document.getElementById('content-strategie-container');
+  container.className = 'cs-root';
   container.innerHTML = '<div class="empty-note">Laden...</div>';
   try {
     clientsCache = await fetchClients();
@@ -44,6 +45,7 @@ export async function renderContentStrategie() {
 
 function renderShell() {
   const container = document.getElementById('content-strategie-container');
+  const client = clientsCache.find((c) => c.id === selectedClientId);
   container.innerHTML = `
     <div class="field" style="max-width:360px;">
       <label>Klant</label>
@@ -51,10 +53,18 @@ function renderShell() {
         ${clientsCache.map((c) => `<option value="${c.id}" ${c.id === selectedClientId ? 'selected' : ''}>${escapeHtml(c.naam)}</option>`).join('')}
       </select>
     </div>
-    ${!clientsCache.length ? '<div class="empty-note">Nog geen klanten — voeg er eerst één toe via de Klanten-tab.</div>' : '<div id="cs-body"></div>'}
+    ${!clientsCache.length ? '<div class="empty-note">Nog geen klanten — voeg er eerst één toe via de Klanten-tab.</div>' : `
+      <div class="cs-lead" style="margin-top:6px; font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,5vw,44px); letter-spacing:.02em; line-height:.9; color:var(--text); max-width:none;">
+        ${client ? escapeHtml(client.naam) : ''}<span style="color:var(--red);">.</span>
+      </div>
+      <div id="cs-body"></div>
+    `}
   `;
   document.getElementById('cs-client-select')?.addEventListener('change', async (e) => {
     selectedClientId = e.target.value;
+    activeSubTab = 'ideeen';
+    activeTagFilter = 'alles';
+    renderShell();
     await loadClientData();
   });
 }
@@ -94,12 +104,12 @@ function renderBody() {
   const body = document.getElementById('cs-body');
   if (!body) return;
   body.innerHTML = `
-    <div class="fin-subnav">
-      ${SUBTABS.map((t) => `<button type="button" class="fin-subtab-btn ${t.key === activeSubTab ? 'active' : ''}" data-tab="${t.key}">${t.label}</button>`).join('')}
-    </div>
+    <nav class="cs-nav">
+      ${SUBTABS.map((t) => `<button type="button" class="${t.key === activeSubTab ? 'active' : ''}" data-tab="${t.key}">${t.label}</button>`).join('')}
+    </nav>
     <div id="cs-panel"></div>
   `;
-  body.querySelectorAll('.fin-subtab-btn').forEach((btn) => {
+  body.querySelectorAll('.cs-nav button').forEach((btn) => {
     btn.addEventListener('click', () => {
       activeSubTab = btn.dataset.tab;
       renderBody();
@@ -127,17 +137,17 @@ function renderIdeeenPanel(panel) {
 
   panel.innerHTML = `
     <div class="section-header-row">
-      <p class="lead" style="color:var(--text-dim); font-size:13px; max-width:60ch;">Format-skeletten om uit te putten: vaste vorm, wisselend onderwerp. Filter op wat je nodig hebt.</p>
+      <p class="cs-lead">Format-skeletten om uit te putten: vaste vorm, wisselend onderwerp. Filter op wat je nodig hebt.</p>
       <button type="button" class="btn btn-red btn-small" id="cs-idee-add">+ Idee</button>
     </div>
-    <div class="legend" style="margin-bottom:16px;">
-      ${allTags.map((t) => `<span class="badge-status tag-filter-chip ${t === activeTagFilter ? 'goedgekeurd' : ''}" data-tag="${escapeAttr(t)}" style="cursor:pointer;">${t === 'alles' ? 'Alles' : escapeHtml(TAG_LABELS[t] || t)}</span>`).join('')}
+    <div class="cs-chips">
+      ${allTags.map((t) => `<button type="button" class="cs-chip ${t === activeTagFilter ? 'active' : ''}" data-tag="${escapeAttr(t)}">${t === 'alles' ? 'Alles' : escapeHtml(TAG_LABELS[t] || t)}</button>`).join('')}
     </div>
-    <div class="concept-list">
+    <div class="cs-cards">
       ${filtered.length ? filtered.map(ideeCardHtml).join('') : '<div class="empty-note">Geen ideeën voor deze filter.</div>'}
     </div>
   `;
-  panel.querySelectorAll('.tag-filter-chip').forEach((chip) => {
+  panel.querySelectorAll('.cs-chip').forEach((chip) => {
     chip.addEventListener('click', () => { activeTagFilter = chip.dataset.tag; renderIdeeenPanel(panel); });
   });
   panel.querySelectorAll('.cs-idee-delete').forEach((btn) => {
@@ -164,19 +174,17 @@ function renderIdeeenPanel(panel) {
 
 function ideeCardHtml(idee) {
   return `
-    <div class="concept-card">
-      <div class="concept-card-header">
-        ${idee.status ? `<span class="badge-status">${escapeHtml(idee.status)}</span>` : ''}
-        ${(idee.tags || []).map((t) => `<span class="badge-status idee">${escapeHtml(TAG_LABELS[t] || t)}</span>`).join('')}
-      </div>
-      <div class="concept-card-title">${escapeHtml(idee.naam)}</div>
-      <div class="concept-card-content">${escapeHtml(idee.wat || '')}</div>
-      ${idee.hook ? `<div class="client-brief-text" style="margin-bottom:8px;"><em>"${escapeHtml(idee.hook)}"</em></div>` : ''}
-      <div class="client-meta-row" style="margin:8px 0;">
-        ${idee.lengte ? `<div class="client-meta-item"><span class="client-meta-label">Lengte</span><span>${escapeHtml(idee.lengte)}</span></div>` : ''}
-        ${idee.heroshot ? `<div class="client-meta-item"><span class="client-meta-label">Heroshot</span><span>${escapeHtml(idee.heroshot)}</span></div>` : ''}
-      </div>
-      <div class="concept-row-actions">
+    <div class="cs-idea">
+      <h3>${escapeHtml(idee.naam)}${idee.status ? `<span class="cs-tag ${idee.status.toLowerCase().includes('maand') ? 'status-now' : ''}">${escapeHtml(idee.status)}</span>` : ''}</h3>
+      <div>${(idee.tags || []).map((t) => `<span class="cs-tag">${escapeHtml(TAG_LABELS[t] || t)}</span>`).join('')}</div>
+      <p class="cs-body">${escapeHtml(idee.wat || '')}</p>
+      ${idee.hook ? `<div class="cs-hook"><em>Hook</em>"${escapeHtml(idee.hook)}"</div>` : ''}
+      ${idee.voorbeeld_link ? `<a class="cs-link" href="${escapeAttr(idee.voorbeeld_link)}" target="_blank" rel="noopener">↗ Voorbeeld bekijken</a>` : ''}
+      <dl class="cs-dl">
+        ${idee.lengte ? `<dt>Lengte</dt><dd>${escapeHtml(idee.lengte)}</dd>` : ''}
+        ${idee.heroshot ? `<dt>Heroshot</dt><dd>${escapeHtml(idee.heroshot)}</dd>` : ''}
+      </dl>
+      <div class="cs-idea-actions">
         <button type="button" class="btn btn-red btn-small cs-idee-send" data-id="${idee.id}">Stuur naar klant</button>
         <button type="button" class="btn-icon cs-idee-delete" data-id="${idee.id}">✕</button>
       </div>
@@ -198,6 +206,7 @@ function openIdeeForm() {
         <div class="field"><label>Lengte</label><input type="text" id="ci-lengte" placeholder="3 + 3×8 + 4 = 31 sec"></div>
         <div class="field"><label>Heroshot</label><input type="text" id="ci-heroshot"></div>
       </div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="ci-voorbeeld" placeholder="https://instagram.com/reel/..."></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -219,6 +228,7 @@ function openIdeeForm() {
       hook: document.getElementById('ci-hook').value.trim() || null,
       lengte: document.getElementById('ci-lengte').value.trim() || null,
       heroshot: document.getElementById('ci-heroshot').value.trim() || null,
+      voorbeeld_link: document.getElementById('ci-voorbeeld').value.trim() || null,
       volgorde: cache.ideeen.length,
     };
     try {
@@ -235,12 +245,10 @@ function openIdeeForm() {
 function renderScriptsPanel(panel) {
   panel.innerHTML = `
     <div class="section-header-row">
-      <p class="lead" style="color:var(--text-dim); font-size:13px;">Uitgewerkte shotlijsten, klaar om te filmen.</p>
+      <p class="cs-lead">Uitgewerkte shotlijsten, klaar om te filmen.</p>
       <button type="button" class="btn btn-red btn-small" id="cs-script-add">+ Script</button>
     </div>
-    <div class="concept-list">
-      ${cache.scripts.length ? cache.scripts.map(scriptCardHtml).join('') : '<div class="empty-note">Nog geen scripts.</div>'}
-    </div>
+    ${cache.scripts.length ? cache.scripts.map(scriptCardHtml).join('') : '<div class="empty-note">Nog geen scripts.</div>'}
   `;
   panel.querySelectorAll('.cs-script-delete').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
@@ -267,22 +275,23 @@ function renderScriptsPanel(panel) {
 function scriptCardHtml(script) {
   const shots = Array.isArray(script.shots) ? script.shots : [];
   return `
-    <div class="concept-card">
-      <div class="concept-card-title">${escapeHtml(script.titel)}</div>
-      ${script.meta ? `<div class="concept-card-content">${escapeHtml(script.meta)}</div>` : ''}
-      <div class="scene-readonly-list">
-        ${shots.map((s) => `
-          <div class="scene-readonly-row">
-            <div class="scene-readonly-num">${escapeHtml(s.tijd || '')}</div>
-            <div class="scene-readonly-cols">
-              <div><span class="scene-readonly-label">Beeld</span><div>${escapeHtml(s.beeld || '')}</div></div>
-              <div><span class="scene-readonly-label">Tekst in beeld</span><div>${escapeHtml(s.tekst_in_beeld || '')}</div></div>
-            </div>
-            ${s.gesproken ? `<div style="margin-top:6px;"><span class="scene-readonly-label">Gesproken</span><div>${escapeHtml(s.gesproken)}</div></div>` : ''}
-          </div>`).join('')}
+    <div class="cs-script">
+      <div class="cs-script-head">
+        <h3>${escapeHtml(script.titel)}</h3>
+        ${script.meta ? `<div class="cs-script-meta">${escapeHtml(script.meta)}</div>` : ''}
+        ${script.voorbeeld_link ? `<a class="cs-link" href="${escapeAttr(script.voorbeeld_link)}" target="_blank" rel="noopener">↗ Voorbeeld bekijken</a>` : ''}
       </div>
-      ${script.regie ? `<div class="client-brief-text" style="margin-top:8px;">${escapeHtml(script.regie)}</div>` : ''}
-      <div class="concept-row-actions" style="margin-top:10px;">
+      ${shots.map((s) => `
+        <div class="cs-row">
+          <div class="cs-t">${escapeHtml(s.tijd || '')}</div>
+          <div class="cs-c">
+            <strong>${escapeHtml(s.beeld || '')}</strong>
+            ${s.tekst_in_beeld ? `<span class="cs-osd">${escapeHtml(s.tekst_in_beeld)}</span>` : ''}
+            ${s.gesproken ? `<span class="cs-say">${escapeHtml(s.gesproken)}</span>` : ''}
+          </div>
+        </div>`).join('')}
+      ${script.regie ? `<div class="cs-regie"><b>Regie.</b> ${escapeHtml(script.regie)}</div>` : ''}
+      <div class="cs-script-actions">
         <button type="button" class="btn btn-red btn-small cs-script-send" data-id="${script.id}">Stuur naar klant</button>
         <button type="button" class="btn-icon cs-script-delete" data-id="${script.id}">✕</button>
       </div>
@@ -299,6 +308,7 @@ function openScriptForm() {
         <textarea id="cscr-shots" rows="6" placeholder="0:00 | De drie wagens samen | €15.000. Drie wagens. | Vijftienduizend euro..."></textarea>
       </div>
       <div class="field"><label>Regie</label><textarea id="cscr-regie" rows="2"></textarea></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="cscr-voorbeeld" placeholder="https://instagram.com/reel/..."></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -321,6 +331,7 @@ function openScriptForm() {
       meta: document.getElementById('cscr-meta').value.trim() || null,
       shots,
       regie: document.getElementById('cscr-regie').value.trim() || null,
+      voorbeeld_link: document.getElementById('cscr-voorbeeld').value.trim() || null,
     };
     try {
       const created = await createContentScript(payload);
@@ -336,18 +347,16 @@ function openScriptForm() {
 function renderHooksPanel(panel) {
   panel.innerHTML = `
     <div class="section-header-row">
-      <p class="lead" style="color:var(--text-dim); font-size:13px;">Hookformules als inspiratiebank.</p>
+      <p class="cs-lead">Hookformules als inspiratiebank.</p>
       <button type="button" class="btn btn-red btn-small" id="cs-hook-add">+ Categorie</button>
     </div>
-    <div class="concept-list">
+    <div class="cs-hookgrid">
       ${cache.hooks.length ? cache.hooks.map((h) => `
-        <div class="concept-card">
-          <div class="concept-card-title">${escapeHtml(h.categorie)}</div>
-          ${h.waarom ? `<div class="concept-card-content">${escapeHtml(h.waarom)}</div>` : ''}
-          <ul style="margin:8px 0 0 18px; font-size:13px; color:var(--text);">
-            ${(h.voorbeelden || []).map((v) => `<li>${escapeHtml(v)}</li>`).join('')}
-          </ul>
-          <div class="concept-row-actions" style="margin-top:10px;"><button type="button" class="btn-icon cs-hook-delete" data-id="${h.id}">✕</button></div>
+        <div class="cs-hookcard">
+          <h3>${escapeHtml(h.categorie)}</h3>
+          ${h.waarom ? `<p class="cs-why">${escapeHtml(h.waarom)}</p>` : ''}
+          <ul>${(h.voorbeelden || []).map((v) => `<li>${escapeHtml(v)}</li>`).join('')}</ul>
+          <div class="cs-idea-actions"><button type="button" class="btn-icon cs-hook-delete" data-id="${h.id}">✕</button></div>
         </div>`).join('') : '<div class="empty-note">Nog geen hookformules.</div>'}
     </div>
   `;
@@ -402,21 +411,22 @@ function renderHooksPanel(panel) {
 function renderDraaidagPanel(panel) {
   panel.innerHTML = `
     <div class="section-header-row">
-      <p class="lead" style="color:var(--text-dim); font-size:13px;">Blokken voor de opnamedag.</p>
+      <p class="cs-lead">Blokken voor de opnamedag.</p>
       <button type="button" class="btn btn-red btn-small" id="cs-dd-add">+ Blok</button>
     </div>
-    <div class="concept-list">
-      ${cache.draaidag.length ? cache.draaidag.map((b) => `
-        <div class="concept-card">
-          <div class="concept-card-header">${b.tijd ? `<span class="badge-status">${escapeHtml(b.tijd)}</span>` : ''}${b.blok ? `<span class="badge-status idee">Blok ${escapeHtml(b.blok)}</span>` : ''}</div>
-          <div class="concept-card-title">${escapeHtml(b.titel || '')}</div>
-          ${b.waarom ? `<div class="concept-card-content">${escapeHtml(b.waarom)}</div>` : ''}
-          <ul style="margin:8px 0 0 18px; font-size:13px; color:var(--text);">
-            ${(b.shots || []).map((s) => `<li>${escapeHtml(s)}</li>`).join('')}
-          </ul>
-          <div class="concept-row-actions" style="margin-top:10px;"><button type="button" class="btn-icon cs-dd-delete" data-id="${b.id}">✕</button></div>
-        </div>`).join('') : '<div class="empty-note">Nog geen draaidag-blokken.</div>'}
-    </div>
+    ${cache.draaidag.length ? cache.draaidag.map((b) => `
+      <div class="cs-block">
+        <div class="cs-tc">
+          ${b.tijd ? `<div class="cs-h">${escapeHtml(b.tijd)}</div>` : ''}
+          ${b.blok ? `<div class="cs-n">BLOK ${escapeHtml(b.blok)}</div>` : ''}
+        </div>
+        <div class="cs-block-body">
+          <h3>${escapeHtml(b.titel || '')}</h3>
+          ${b.waarom ? `<p class="cs-why" style="color:var(--text-dim); font-size:12.5px; margin:0 0 10px;">${escapeHtml(b.waarom)}</p>` : ''}
+          <ul>${(b.shots || []).map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+          <div class="cs-idea-actions"><button type="button" class="btn-icon cs-dd-delete" data-id="${b.id}">✕</button></div>
+        </div>
+      </div>`).join('') : '<div class="empty-note">Nog geen draaidag-blokken.</div>'}
   `;
   panel.querySelectorAll('.cs-dd-delete').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -475,12 +485,12 @@ function renderDraaidagPanel(panel) {
 function renderBrollPanel(panel) {
   panel.innerHTML = `
     <div class="section-header-row">
-      <p class="lead" style="color:var(--text-dim); font-size:13px;">Losse shots om altijd bij te filmen.</p>
+      <p class="cs-lead">Losse shots om altijd bij te filmen.</p>
       <button type="button" class="btn btn-red btn-small" id="cs-broll-add">+ Item</button>
     </div>
-    ${cache.broll.length ? cache.broll.map((b) => `
-      <div class="detail-list-item"><span>${escapeHtml(b.tekst)}</span><button type="button" class="btn-icon cs-broll-delete" data-id="${b.id}">✕</button></div>
-    `).join('') : '<div class="empty-note">Nog geen b-roll-lijst.</div>'}
+    ${cache.broll.length ? `<ul class="cs-broll">${cache.broll.map((b) => `
+      <li><span>${escapeHtml(b.tekst)}</span> <button type="button" class="btn-icon cs-broll-delete" data-id="${b.id}">✕</button></li>
+    `).join('')}</ul>` : '<div class="empty-note">Nog geen b-roll-lijst.</div>'}
   `;
   panel.querySelectorAll('.cs-broll-delete').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -505,15 +515,15 @@ function renderBrollPanel(panel) {
 // ── Planner ──────────────────────────────────────────────
 function renderPlannerPanel(panel) {
   panel.innerHTML = `
-    <p class="lead" style="color:var(--text-dim); font-size:13px; margin-bottom:14px;">Vijf rollen, vijf video's voor de volgende maand — elke short een ander doel.</p>
-    <table class="log-table">
+    <p class="cs-lead">Vijf rollen, vijf video's voor de volgende maand — elke short een ander doel.</p>
+    <table class="cs-plan">
       <thead><tr><th>Rol</th><th>Format</th><th>Onderwerp</th><th>Hook</th><th></th></tr></thead>
       <tbody>
         ${ROLLEN.map((rol) => {
           const row = cache.planner.find((p) => p.rol === rol) || { rol };
           return `
           <tr data-rol="${rol}">
-            <td>${ROL_LABELS[rol]}</td>
+            <td><span class="cs-role">${ROL_LABELS[rol]}</span></td>
             <td><input type="text" class="cs-planner-field" data-field="format" data-rol="${rol}" value="${escapeAttr(row.format || '')}"></td>
             <td><input type="text" class="cs-planner-field" data-field="onderwerp" data-rol="${rol}" value="${escapeAttr(row.onderwerp || '')}"></td>
             <td><input type="text" class="cs-planner-field" data-field="hook" data-rol="${rol}" value="${escapeAttr(row.hook || '')}"></td>
@@ -594,7 +604,7 @@ function openSendModal(kind, item) {
       <div class="field"><label>Opdracht</label>
         <select id="cs-send-project">${projects.map((p) => `<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('')}</select>
       </div>
-      <div class="field"><label>Voorbeeldreel-link (optioneel)</label><input type="url" id="cs-send-reel" placeholder="https://..."></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel, optioneel)</label><input type="url" id="cs-send-reel" value="${escapeAttr(item.voorbeeld_link || '')}" placeholder="https://instagram.com/reel/..."></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -627,7 +637,7 @@ function openSendModal(kind, item) {
 function buildConceptPayload(kind, item, reel) {
   if (kind === 'idee') {
     const lines = [item.wat, item.hook ? `Hook: "${item.hook}"` : null, item.lengte ? `Lengte: ${item.lengte}` : null, item.heroshot ? `Heroshot: ${item.heroshot}` : null];
-    if (reel) lines.push(`Voorbeeldreel: ${reel}`);
+    if (reel) lines.push(`Voorbeeld: ${reel}`);
     return { title: item.naam, content: lines.filter(Boolean).join('\n'), type: 'idee' };
   }
   if (kind === 'script') {
@@ -638,11 +648,11 @@ function buildConceptPayload(kind, item, reel) {
       s.gesproken ? `Gesproken: ${s.gesproken}` : null,
     ].filter(Boolean).join('\n'));
     const lines = [item.meta, ...shotLines, item.regie ? `Regie: ${item.regie}` : null];
-    if (reel) lines.push(`Voorbeeldreel: ${reel}`);
+    if (reel) lines.push(`Voorbeeld: ${reel}`);
     return { title: item.titel, content: lines.filter(Boolean).join('\n\n'), type: 'script' };
   }
   // planner row
   const lines = [item.format ? `Format: ${item.format}` : null, item.onderwerp ? `Onderwerp: ${item.onderwerp}` : null, item.hook ? `Hook: "${item.hook}"` : null];
-  if (reel) lines.push(`Voorbeeldreel: ${reel}`);
+  if (reel) lines.push(`Voorbeeld: ${reel}`);
   return { title: `${ROL_LABELS[item.rol]} — ${item.onderwerp || item.format || 'idee'}`, content: lines.filter(Boolean).join('\n'), type: 'idee' };
 }

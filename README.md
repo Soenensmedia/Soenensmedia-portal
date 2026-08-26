@@ -616,3 +616,15 @@ Ideeën en scripts in het Contentsysteem zijn standaard enkel voor jou zichtbaar
 
 1. In Supabase: **Edge Functions** → nieuwe functie **"notify-new-concept"** aanmaken, plak de inhoud van [`supabase/functions/notify-new-concept/index.ts`](supabase/functions/notify-new-concept/index.ts) → Deploy. Gebruikt dezelfde `BREVO_API_KEY`-secret als de andere mailfuncties — hoef je dus niet opnieuw in te stellen.
 2. Geen nieuwe SQL nodig.
+
+### Fase 33 — Voorbeeldlink + eigen stijl voor het Contentsysteem (nieuw)
+
+Twee verbeteringen op vraag:
+
+- **Voorbeeldlink per idee/script**: nieuw veld (bv. een Instagram-reel als referentie) bij het aanmaken van een idee of script, zichtbaar als "↗ Voorbeeld bekijken"-link op de kaart, en automatisch vooraf ingevuld wanneer je iets naar een klant doorstuurt.
+- **Eigen, minder "AI-achtige" stijl voor deze tab**: de Contentsysteem-tab gebruikte tot nu toe dezelfde ronde kaarten/pilletjes als de rest van het portaal. Nu heeft enkel deze tab zijn eigen, scherpere/editoriale stijl — overgenomen van het originele concept: geen ronde hoeken, dunne lijnen i.p.v. schaduwen, DM Mono voor labels/tags/tijden, Bebas Neue-koppen. De rest van het portaal blijft ongewijzigd.
+
+### Eenmalig instellen
+
+1. In Supabase: SQL Editor → plak en run [`sql/027_content_voorbeeldlink.sql`](sql/027_content_voorbeeldlink.sql).
+2. Geen andere stappen — de stijl is puur CSS, geen configuratie nodig.

@@ -6,9 +6,9 @@ do $$
 declare
   v_client_id uuid;
 begin
-  select id into v_client_id from clients where naam = 'Decaigny Selected Cars & Vans';
+  select id into v_client_id from clients where naam ilike '%Decaigny%' limit 1;
   if v_client_id is null then
-    raise notice 'Klant Decaigny Selected Cars & Vans niet gevonden — maak deze eerst aan in de Klanten-tab.';
+    raise notice 'Geen klant met "Decaigny" in de naam gevonden — maak deze eerst aan in de Klanten-tab.';
     return;
   end if;
 

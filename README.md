@@ -720,3 +720,12 @@ Wil een klant dat je ook de betaalde advertenties (ads) voor hen beheert, ook al
 Werkt per contract (los van het gekozen pakket), en komt automatisch mee in de PDF en bij de klant.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 43 — Twee aparte budgetvelden bij advertentiebeheer (op vraag)
+
+Bij het ads-vinkje staan nu 2 losse velden, want dat zijn 2 heel verschillende bedragen:
+
+- **Vergoeding voor opzetten/beheren ads (€/maand)** — jouw eigen dienst, telt automatisch mee op bij de pakketprijs: Artikel 3 toont nu "Pakket" + "Beheer advertenties" apart, met een gecombineerd maandelijks totaal (incl. btw en over de volledige looptijd).
+- **Advertentiebudget zelf** — puur informatief, het bedrag dat de klant rechtstreeks aan Meta/TikTok/... betaalt, expliciet vermeld als iets dat los staat van jouw vergoeding.
+
+Geen nieuwe SQL, geen configuratie nodig.

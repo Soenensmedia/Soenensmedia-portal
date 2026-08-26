@@ -166,8 +166,8 @@ async function openContractBuilder(existing) {
         </label>
       </div>
       <div class="field-row" id="ctf-ads-budget-row" style="${draft.fields.ads === 'true' ? '' : 'display:none;'}">
-        <div class="field"><label>Advertentiebudget (optioneel, ter info in het contract)</label><input type="text" id="ctf-adsBudget" placeholder="Bv. €500/maand, rechtstreeks aan Meta" value="${escapeAttr(draft.fields.adsBudget || '')}"></div>
-        <div></div>
+        <div class="field"><label>Vergoeding voor opzetten/beheren ads (€/maand, komt bij de prijs)</label><input type="number" min="0" step="10" id="ctf-adsManagementFee" placeholder="Bv. 250" value="${escapeAttr(draft.fields.adsManagementFee || '')}"></div>
+        <div class="field"><label>Advertentiebudget zelf (optioneel, ter info — betaalt klant rechtstreeks aan platform)</label><input type="text" id="ctf-adsBudget" placeholder="Bv. €500/maand aan Meta" value="${escapeAttr(draft.fields.adsBudget || '')}"></div>
       </div>
 
       <details open style="margin:14px 0;">
@@ -224,7 +224,7 @@ async function openContractBuilder(existing) {
   `, { wide: true });
 
   const form = document.getElementById('ct-form');
-  const fieldIds = ['smName', 'smAdr', 'smVat', 'smMail', 'clName', 'clAdr', 'clVat', 'clContact', 'hourly', 'payterm', 'booking', 'revisions', 'archive', 'court', 'plaats', 'ver', 'adsBudget'];
+  const fieldIds = ['smName', 'smAdr', 'smVat', 'smMail', 'clName', 'clAdr', 'clVat', 'clContact', 'hourly', 'payterm', 'booking', 'revisions', 'archive', 'court', 'plaats', 'ver', 'adsBudget', 'adsManagementFee'];
 
   function readDraft() {
     draft.pack_key = document.getElementById('ctf-pack').value;

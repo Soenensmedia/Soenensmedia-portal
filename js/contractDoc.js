@@ -92,9 +92,12 @@ export function contractArticlesHtml(contract) {
   const price = Number(contract.price) || 0;
   const term = Number(contract.term) || 12;
   const notice = Number(contract.notice) || 2;
-  const vat = price * 0.21;
-  const incl = price + vat;
-  const total = price * term;
+  const adsEnabled = fields.ads === 'true';
+  const adsFee = adsEnabled ? (Number(fields.adsManagementFee) || 0) : 0;
+  const monthly = price + adsFee;
+  const vat = monthly * 0.21;
+  const incl = monthly + vat;
+  const total = monthly * term;
 
   return `
     <header class="doc-masthead">
@@ -151,14 +154,16 @@ export function contractArticlesHtml(contract) {
         <ul class="doc-deliver">${items.map((it) => `<li>${escapeHtml(it)}</li>`).join('')}</ul>
       </div>
       <div class="doc-totals">
-        <div><span>Maandelijks, excl. btw</span><span>${fmtEUR(price)}</span></div>
+        <div><span>Pakket, excl. btw</span><span>${fmtEUR(price)}</span></div>
+        ${adsEnabled && adsFee > 0 ? `<div><span>Beheer advertenties (opzet + optimalisatie), excl. btw</span><span>${fmtEUR(adsFee)}</span></div>` : ''}
+        <div><span>Maandelijks totaal, excl. btw</span><span>${fmtEUR(monthly)}</span></div>
         <div><span>Btw 21%</span><span>${fmtEUR(vat)}</span></div>
-        <div><span>Maandelijks, incl. btw</span><span>${fmtEUR(incl)}</span></div>
+        <div><span>Maandelijks totaal, incl. btw</span><span>${fmtEUR(incl)}</span></div>
         <div><span>Totaal over de vaste looptijd (${term} maanden, excl. btw)</span><span>${fmtEUR(total)}</span></div>
       </div>
       <p class="doc-small" style="margin-top:14px">Niet-gebruikte prestaties uit een lopende maand worden niet overgedragen naar een volgende maand, tenzij de partijen dat schriftelijk anders afspreken. Werk buiten het pakket wordt vooraf geraamd en pas na schriftelijke goedkeuring van de klant uitgevoerd, aan een uurtarief van ${fmtEUR(fields.hourly ?? DEFAULT_FIELDS.hourly)} excl. btw of aan een vooraf afgesproken vaste prijs.</p>
-      ${fields.ads === 'true' ? `
-      <p class="doc-small" style="margin-top:10px">Daarnaast beheert Soenens Media, op vraag van de klant, de betaalde advertentiecampagnes voor de content uit dit pakket: opzet, doelgroepbepaling, optimalisatie en periodieke rapportage op de advertentiekanalen van de klant (o.a. Meta, TikTok). De klant geeft Soenens Media hiervoor toegang tot de nodige advertentie- en zakelijke accounts en blijft eindverantwoordelijke voor de inhoud van de campagnes en de naleving van de toepasselijke reclamewetgeving. Het advertentiebudget zelf wordt rechtstreeks door de klant aan het platform betaald${fields.adsBudget ? `, geraamd op ${escapeHtml(fields.adsBudget)}` : ''} en valt buiten de vergoeding uit dit artikel.</p>` : ''}
+      ${adsEnabled ? `
+      <p class="doc-small" style="margin-top:10px">Daarnaast beheert Soenens Media, op vraag van de klant, de betaalde advertentiecampagnes voor de content uit dit pakket: opzet, doelgroepbepaling, optimalisatie en periodieke rapportage op de advertentiekanalen van de klant (o.a. Meta, TikTok)${adsFee > 0 ? `, voor een vergoeding van ${fmtEUR(adsFee)} per maand excl. btw, inbegrepen in het maandelijks totaal hierboven` : ''}. De klant geeft Soenens Media hiervoor toegang tot de nodige advertentie- en zakelijke accounts en blijft eindverantwoordelijke voor de inhoud van de campagnes en de naleving van de toepasselijke reclamewetgeving. Het advertentiebudget zelf — de bedragen die effectief aan het platform (Meta, TikTok, ...) besteed worden — wordt rechtstreeks door de klant betaald${fields.adsBudget ? `, geraamd op ${escapeHtml(fields.adsBudget)}` : ''}, en valt buiten de vergoeding aan Soenens Media.</p>` : ''}
     </section>
 
     <section class="doc-art">

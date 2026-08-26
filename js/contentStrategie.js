@@ -28,6 +28,13 @@ let activeTagFilter = 'alles';
 
 let cache = { strategie: null, ideeen: [], scripts: [], hooks: [], draaidag: [], broll: [], planner: [] };
 
+export async function openContentStrategieForClient(clientId) {
+  selectedClientId = clientId;
+  activeSubTab = 'ideeen';
+  activeTagFilter = 'alles';
+  await renderContentStrategie();
+}
+
 export async function renderContentStrategie() {
   const container = document.getElementById('content-strategie-container');
   container.className = 'cs-root';

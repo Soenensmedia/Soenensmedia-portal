@@ -8,9 +8,11 @@ import { openEquipmentForm } from './equipment.js';
 import { showToast } from './toast.js';
 import { hasUnseenClientActivity, isConceptApprovalUnseen, markConceptSeen } from './notifications.js';
 import { TYPE_COLOR_VAR } from './agenda.js';
+import { openContentStrategieForClient } from './contentStrategie.js';
 
 const RETAINER_RENEWAL_WARNING_DAYS = 30;
 const ONDERHOUD_WARNING_DAYS = 30;
+const CONTENT_REMINDER_FROM_DAY = 15;
 const DEFAULT_AFGEROND_LIMIT = 5;
 let showAllAfgerond = false;
 
@@ -103,6 +105,19 @@ function attentionItems() {
     items.push({ type: 'equipment', id: eq.id, title: eq.naam, sub: 'Onderhoud', reason });
   });
 
+  if (now.getDate() >= CONTENT_REMINDER_FROM_DAY) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    (state.clients || []).forEach((c) => {
+      if (!c.is_retainer) return;
+      const projectIds = new Set(state.projects.filter((p) => p.client_id === c.id).map((p) => p.id));
+      if (!projectIds.size) return;
+      const sentThisMonth = (state.allConcepts || []).some((cn) =>
+        projectIds.has(cn.project_id) && new Date(cn.created_at) >= monthStart);
+      if (sentThisMonth) return;
+      items.push({ type: 'content-reminder', id: c.id, title: c.naam, sub: 'Contentsysteem', reason: 'Nog niets verstuurd deze maand' });
+    });
+  }
+
   return items;
 }
 
@@ -144,6 +159,11 @@ export function renderDashboard() {
         } else if (el.dataset.type === 'equipment') {
           const eq = state.equipment.find((x) => x.id === el.dataset.id);
           if (eq) openEquipmentForm(eq);
+        } else if (el.dataset.type === 'content-reminder') {
+          document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
+          document.getElementById('view-contentstrategie').classList.remove('hidden');
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === 'contentstrategie'));
+          openContentStrategieForClient(el.dataset.id);
         } else {
           openProjectDetail(el.dataset.id);
         }

@@ -648,3 +648,13 @@ Na het weghalen van Scripting viel me zelf iets op, en ik voegde meteen 2 kleine
 - **Zoekfunctie doorzoekt nu ook facturen en offertes** (klant, omschrijving, nummer) — klikken springt naar de Financiën-tab en opent meteen de juiste factuur/offerte.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 36 — Maandelijkse content-herinnering (nieuw)
+
+Vanaf de 15de van de maand controleert "Aandacht nodig" per retainer-klant of er al iets doorgestuurd is via het Contentsysteem deze maand. Zo niet: "Nog niets verstuurd deze maand" — klikken springt meteen naar die klant in de Contentsysteem-tab.
+
+- Kijkt enkel naar retainer-klanten (`is_retainer`) met minstens 1 gekoppelde opdracht.
+- "Verstuurd" = er bestaat een `project_concepts`-rij (aangemaakt via "Stuur naar klant") sinds de 1ste van deze maand, voor een opdracht van die klant.
+- Pas zichtbaar vanaf dag 15 van de maand — vroeger zou het altijd afgaan (er is dan simpelweg nog niets verstuurd) en enkel ruis zijn.
+
+Geen nieuwe SQL, geen configuratie nodig.

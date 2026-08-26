@@ -432,19 +432,16 @@ table.log-table tr:last-child td { border-bottom: none; }
 }
 
 /* ══════════ KLANT: WELKOM & PROJECTLIJST ══════════ */
-.client-portal-hero {
-  width: 100%; aspect-ratio: 21/6; border-radius: 10px; overflow: hidden; margin-bottom: 22px;
-  background: var(--paneld) center/cover no-repeat; border: 1px solid var(--line);
+.client-welcome-header { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.client-welcome-avatar {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  background: var(--paneld) center/contain no-repeat; border: 1px solid var(--line);
 }
-@media (max-width: 600px) {
-  .client-portal-hero { aspect-ratio: 16/9; }
-}
-
-.client-welcome { margin-bottom: 24px; }
+.client-welcome-text { min-width: 0; }
 .client-welcome-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #fff; letter-spacing: .03em; }
 .client-welcome-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
 .client-welcome-guide {
-  margin-top: 16px; font-size: 13.5px; color: var(--text); line-height: 1.6; white-space: pre-line;
+  margin: 0 0 24px; font-size: 13.5px; color: var(--text); line-height: 1.6; white-space: pre-line;
   background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
 }
 .client-welcome-guide.collapsed {

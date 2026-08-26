@@ -559,3 +559,12 @@ Bij het doorlopen van het hele portaal op zoek naar verbeterpunten kwam dit naar
 - De rest van de pagina blijft nu netjes binnen het schermbreedte staan (geen zijwaartse scroll meer op de hele pagina).
 
 Enkel voorkomt op smaller dan ~720px (telefoon/kleine tablet) — op laptop/desktop verandert er niets. Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 29 — Klant-startscherm opgeruimd (nieuw)
+
+Feedback op een screenshot: het startscherm van de klant ("Mijn projecten") oogde rommelig, en vooral de bovenste foto stond veel te breed — logisch, want die brede banier (21:6, bedoeld voor een echte panoramafoto) toonde daar in de praktijk altijd het kléine ronde klantlogo, wat een hoop lege zwarte ruimte gaf.
+
+- De brede banner is vervangen door een compact rond logo-badge naast "Welkom, [naam]" — past veel beter bij een logo, en het scherm oogt meteen rustiger doordat er geen groot leeg vlak meer bovenaan staat.
+- Verder dezelfde inhoud (welkomstgids, projecttegels) maar met wat strakkere ruimte ertussen.
+
+Geen nieuwe SQL, geen configuratie nodig — puur een weergave-aanpassing.

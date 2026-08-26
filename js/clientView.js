@@ -151,12 +151,14 @@ function renderClientList() {
   const heroPhoto = state.clientProjects.map(clientPhotoUrlFor).find(Boolean) || state.portalPhotoUrl;
 
   container.innerHTML = `
-    ${heroPhoto ? `<div class="client-portal-hero" style="background-image:url('${escapeAttr(heroPhoto)}')"></div>` : ''}
-    <div class="client-welcome">
-      <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
-      <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
-      ${welcomeGuideHtml()}
+    <div class="client-welcome-header">
+      ${heroPhoto ? `<div class="client-welcome-avatar" style="background-image:url('${escapeAttr(heroPhoto)}')"></div>` : ''}
+      <div class="client-welcome-text">
+        <div class="client-welcome-title">Welkom${name ? ', ' + escapeHtml(name) : ''}</div>
+        <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
+      </div>
     </div>
+    ${welcomeGuideHtml()}
     ${active.length ? `
       ${done.length ? '<div class="client-group-label">Actief</div>' : ''}
       <div class="client-project-tiles">${active.map(tileHtml).join('')}</div>` : ''}

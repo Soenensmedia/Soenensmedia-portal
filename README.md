@@ -658,3 +658,11 @@ Vanaf de 15de van de maand controleert "Aandacht nodig" per retainer-klant of er
 - Pas zichtbaar vanaf dag 15 van de maand — vroeger zou het altijd afgaan (er is dan simpelweg nog niets verstuurd) en enkel ruis zijn.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 37 — Bewerk-knop op ideeën en scripts in het Contentsysteem (nieuw)
+
+Ideeën en scripts konden tot nu enkel aangemaakt of verwijderd worden — niet achteraf aangepast. Nu staat er een **"Bewerk"**-knop naast "Stuur naar klant", die hetzelfde formulier opent maar voorgevuld met de bestaande gegevens (inclusief de voorbeeldlink). Handig om zelf nog een Instagram-link toe te voegen aan een idee dat ik voor je aanmaakte, of een kleinigheid bij te schaven.
+
+Geen nieuwe SQL, geen configuratie nodig.
+
+Geen nieuwe SQL, geen configuratie nodig.

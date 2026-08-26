@@ -3,8 +3,8 @@ import { escapeHtml, escapeAttr } from './util.js';
 import {
   fetchClients,
   fetchContentStrategie, saveContentStrategie,
-  fetchContentIdeeen, createContentIdee, deleteContentIdee,
-  fetchContentScripts, createContentScript, deleteContentScript,
+  fetchContentIdeeen, createContentIdee, updateContentIdee, deleteContentIdee,
+  fetchContentScripts, createContentScript, updateContentScript, deleteContentScript,
   fetchContentHookformules, createContentHookformule, deleteContentHookformule,
   fetchContentDraaidag, createContentDraaidag, deleteContentDraaidag,
   fetchContentBroll, createContentBroll, deleteContentBroll,
@@ -176,6 +176,13 @@ function renderIdeeenPanel(panel) {
       if (idee) openSendModal('idee', idee);
     });
   });
+  panel.querySelectorAll('.cs-idee-edit').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idee = cache.ideeen.find((i) => i.id === btn.dataset.id);
+      if (idee) openIdeeForm(idee);
+    });
+  });
   document.getElementById('cs-idee-add')?.addEventListener('click', () => openIdeeForm());
 }
 
@@ -193,32 +200,33 @@ function ideeCardHtml(idee) {
       </dl>
       <div class="cs-idea-actions">
         <button type="button" class="btn btn-red btn-small cs-idee-send" data-id="${idee.id}">Stuur naar klant</button>
+        <button type="button" class="btn btn-ghost btn-small cs-idee-edit" data-id="${idee.id}">Bewerk</button>
         <button type="button" class="btn-icon cs-idee-delete" data-id="${idee.id}">✕</button>
       </div>
     </div>`;
 }
 
-function openIdeeForm() {
+function openIdeeForm(existing = null) {
   openModal(`
-    <div class="modal-header"><h2>Idee toevoegen</h2></div>
+    <div class="modal-header"><h2>${existing ? 'Idee bewerken' : 'Idee toevoegen'}</h2></div>
     <form id="cs-idee-form">
-      <div class="field"><label>Naam</label><input type="text" id="ci-naam" required></div>
+      <div class="field"><label>Naam</label><input type="text" id="ci-naam" required value="${escapeAttr(existing?.naam || '')}"></div>
       <div class="field-row">
-        <div class="field"><label>Status</label><input type="text" id="ci-status" placeholder="Bv. Maand 1, beschikbaar..."></div>
-        <div class="field"><label>Tags (komma-gescheiden)</label><input type="text" id="ci-tags" placeholder="prater-vrij, stock, snel"></div>
+        <div class="field"><label>Status</label><input type="text" id="ci-status" placeholder="Bv. Maand 1, beschikbaar..." value="${escapeAttr(existing?.status || '')}"></div>
+        <div class="field"><label>Tags (komma-gescheiden)</label><input type="text" id="ci-tags" placeholder="prater-vrij, stock, snel" value="${escapeAttr((existing?.tags || []).join(', '))}"></div>
       </div>
-      <div class="field"><label>Wat</label><textarea id="ci-wat" rows="2"></textarea></div>
-      <div class="field"><label>Hook</label><input type="text" id="ci-hook"></div>
+      <div class="field"><label>Wat</label><textarea id="ci-wat" rows="2">${escapeHtml(existing?.wat || '')}</textarea></div>
+      <div class="field"><label>Hook</label><input type="text" id="ci-hook" value="${escapeAttr(existing?.hook || '')}"></div>
       <div class="field-row">
-        <div class="field"><label>Lengte</label><input type="text" id="ci-lengte" placeholder="3 + 3×8 + 4 = 31 sec"></div>
-        <div class="field"><label>Heroshot</label><input type="text" id="ci-heroshot"></div>
+        <div class="field"><label>Lengte</label><input type="text" id="ci-lengte" placeholder="3 + 3×8 + 4 = 31 sec" value="${escapeAttr(existing?.lengte || '')}"></div>
+        <div class="field"><label>Heroshot</label><input type="text" id="ci-heroshot" value="${escapeAttr(existing?.heroshot || '')}"></div>
       </div>
-      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="ci-voorbeeld" placeholder="https://instagram.com/reel/..."></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="ci-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || '')}"></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
           <button type="button" class="btn btn-ghost" id="ci-cancel">Annuleren</button>
-          <button type="submit" class="btn btn-red">Toevoegen</button>
+          <button type="submit" class="btn btn-red">${existing ? 'Opslaan' : 'Toevoegen'}</button>
         </div>
       </div>
     </form>
@@ -236,14 +244,22 @@ function openIdeeForm() {
       lengte: document.getElementById('ci-lengte').value.trim() || null,
       heroshot: document.getElementById('ci-heroshot').value.trim() || null,
       voorbeeld_link: document.getElementById('ci-voorbeeld').value.trim() || null,
-      volgorde: cache.ideeen.length,
     };
     try {
-      const created = await createContentIdee(payload);
-      cache.ideeen.push(created);
-      closeModal();
-      renderPanel();
-      showToast('Idee toegevoegd');
+      if (existing) {
+        const updated = await updateContentIdee(existing.id, payload);
+        const idx = cache.ideeen.findIndex((i) => i.id === existing.id);
+        if (idx >= 0) cache.ideeen[idx] = updated;
+        closeModal();
+        renderPanel();
+        showToast('Idee opgeslagen');
+      } else {
+        const created = await createContentIdee({ ...payload, volgorde: cache.ideeen.length });
+        cache.ideeen.push(created);
+        closeModal();
+        renderPanel();
+        showToast('Idee toegevoegd');
+      }
     } catch (err) { showToast(err.message, true); }
   });
 }
@@ -276,6 +292,13 @@ function renderScriptsPanel(panel) {
       if (script) openSendModal('script', script);
     });
   });
+  panel.querySelectorAll('.cs-script-edit').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const script = cache.scripts.find((s) => s.id === btn.dataset.id);
+      if (script) openScriptForm(script);
+    });
+  });
   document.getElementById('cs-script-add')?.addEventListener('click', () => openScriptForm());
 }
 
@@ -300,27 +323,34 @@ function scriptCardHtml(script) {
       ${script.regie ? `<div class="cs-regie"><b>Regie.</b> ${escapeHtml(script.regie)}</div>` : ''}
       <div class="cs-script-actions">
         <button type="button" class="btn btn-red btn-small cs-script-send" data-id="${script.id}">Stuur naar klant</button>
+        <button type="button" class="btn btn-ghost btn-small cs-script-edit" data-id="${script.id}">Bewerk</button>
         <button type="button" class="btn-icon cs-script-delete" data-id="${script.id}">✕</button>
       </div>
     </div>`;
 }
 
-function openScriptForm() {
+function shotsToLines(shots) {
+  return (Array.isArray(shots) ? shots : [])
+    .map((s) => [s.tijd, s.beeld, s.tekst_in_beeld, s.gesproken].map((p) => p || '').join(' | '))
+    .join('\n');
+}
+
+function openScriptForm(existing = null) {
   openModal(`
-    <div class="modal-header"><h2>Script toevoegen</h2></div>
+    <div class="modal-header"><h2>${existing ? 'Script bewerken' : 'Script toevoegen'}</h2></div>
     <form id="cs-script-form">
-      <div class="field"><label>Titel</label><input type="text" id="cscr-titel" required></div>
-      <div class="field"><label>Meta</label><input type="text" id="cscr-meta" placeholder="Bereik ±35 sec, blok D, 11u30"></div>
+      <div class="field"><label>Titel</label><input type="text" id="cscr-titel" required value="${escapeAttr(existing?.titel || '')}"></div>
+      <div class="field"><label>Meta</label><input type="text" id="cscr-meta" placeholder="Bereik ±35 sec, blok D, 11u30" value="${escapeAttr(existing?.meta || '')}"></div>
       <div class="field"><label>Shots (1 per regel: tijd | beeld | tekst in beeld | gesproken)</label>
-        <textarea id="cscr-shots" rows="6" placeholder="0:00 | De drie wagens samen | €15.000. Drie wagens. | Vijftienduizend euro..."></textarea>
+        <textarea id="cscr-shots" rows="6" placeholder="0:00 | De drie wagens samen | €15.000. Drie wagens. | Vijftienduizend euro...">${escapeHtml(shotsToLines(existing?.shots))}</textarea>
       </div>
-      <div class="field"><label>Regie</label><textarea id="cscr-regie" rows="2"></textarea></div>
-      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="cscr-voorbeeld" placeholder="https://instagram.com/reel/..."></div>
+      <div class="field"><label>Regie</label><textarea id="cscr-regie" rows="2">${escapeHtml(existing?.regie || '')}</textarea></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="cscr-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || '')}"></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
           <button type="button" class="btn btn-ghost" id="cscr-cancel">Annuleren</button>
-          <button type="submit" class="btn btn-red">Toevoegen</button>
+          <button type="submit" class="btn btn-red">${existing ? 'Opslaan' : 'Toevoegen'}</button>
         </div>
       </div>
     </form>
@@ -341,11 +371,20 @@ function openScriptForm() {
       voorbeeld_link: document.getElementById('cscr-voorbeeld').value.trim() || null,
     };
     try {
-      const created = await createContentScript(payload);
-      cache.scripts.push(created);
-      closeModal();
-      renderPanel();
-      showToast('Script toegevoegd');
+      if (existing) {
+        const updated = await updateContentScript(existing.id, payload);
+        const idx = cache.scripts.findIndex((s) => s.id === existing.id);
+        if (idx >= 0) cache.scripts[idx] = updated;
+        closeModal();
+        renderPanel();
+        showToast('Script opgeslagen');
+      } else {
+        const created = await createContentScript(payload);
+        cache.scripts.push(created);
+        closeModal();
+        renderPanel();
+        showToast('Script toegevoegd');
+      }
     } catch (err) { showToast(err.message, true); }
   });
 }

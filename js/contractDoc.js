@@ -157,6 +157,8 @@ export function contractArticlesHtml(contract) {
         <div><span>Totaal over de vaste looptijd (${term} maanden, excl. btw)</span><span>${fmtEUR(total)}</span></div>
       </div>
       <p class="doc-small" style="margin-top:14px">Niet-gebruikte prestaties uit een lopende maand worden niet overgedragen naar een volgende maand, tenzij de partijen dat schriftelijk anders afspreken. Werk buiten het pakket wordt vooraf geraamd en pas na schriftelijke goedkeuring van de klant uitgevoerd, aan een uurtarief van ${fmtEUR(fields.hourly ?? DEFAULT_FIELDS.hourly)} excl. btw of aan een vooraf afgesproken vaste prijs.</p>
+      ${fields.ads === 'true' ? `
+      <p class="doc-small" style="margin-top:10px">Daarnaast beheert Soenens Media, op vraag van de klant, de betaalde advertentiecampagnes voor de content uit dit pakket: opzet, doelgroepbepaling, optimalisatie en periodieke rapportage op de advertentiekanalen van de klant (o.a. Meta, TikTok). De klant geeft Soenens Media hiervoor toegang tot de nodige advertentie- en zakelijke accounts en blijft eindverantwoordelijke voor de inhoud van de campagnes en de naleving van de toepasselijke reclamewetgeving. Het advertentiebudget zelf wordt rechtstreeks door de klant aan het platform betaald${fields.adsBudget ? `, geraamd op ${escapeHtml(fields.adsBudget)}` : ''} en valt buiten de vergoeding uit dit artikel.</p>` : ''}
     </section>
 
     <section class="doc-art">

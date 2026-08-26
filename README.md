@@ -712,3 +712,11 @@ Op het contract-bouwformulier stonden "Rondes feedback" en de pakketnaam weggest
 - De sectie met adressen/BTW-nummers/uurtarief/rechtbank/... staat nu standaard open (niet meer ingeklapt), zodat je meteen ziet wat er allemaal per contract aan te passen is.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 42 — Optie "advertentiebeheer" per contract (op vraag)
+
+Wil een klant dat je ook de betaalde advertenties (ads) voor hen beheert, ook al valt dat niet standaard in het gekozen pakket? Nieuw vinkje **"Extra optie: Soenens Media beheert ook de betaalde advertenties (ads)"** in de contract-bouwer. Aanvinken voegt automatisch een extra alinea toe aan Artikel 3 (Pakket en vergoeding): dat jij de campagnes opzet, doelgroepen bepaalt, optimaliseert en rapporteert, dat de klant je toegang geeft tot de nodige accounts, dat de klant eindverantwoordelijk blijft voor de inhoud en reclamewetgeving, en dat het advertentiebudget zelf rechtstreeks door de klant aan het platform betaald wordt (dus los van je eigen vergoeding) — met een optioneel veld om een indicatief maandbudget te vermelden.
+
+Werkt per contract (los van het gekozen pakket), en komt automatisch mee in de PDF en bij de klant.
+
+Geen nieuwe SQL, geen configuratie nodig.

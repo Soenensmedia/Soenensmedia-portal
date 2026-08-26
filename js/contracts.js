@@ -159,6 +159,17 @@ async function openContractBuilder(existing) {
       </div>
       <div class="field"><label>Deliverables (1 per regel — vrij aan te passen, ook bij "Op maat")</label><textarea id="ctf-items" rows="6">${escapeHtml(draft.items.join('\n'))}</textarea></div>
 
+      <div class="field" style="margin-top:4px;">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="ctf-ads" style="width:auto;" ${draft.fields.ads === 'true' ? 'checked' : ''}>
+          Extra optie: Soenens Media beheert ook de betaalde advertenties (ads) voor deze klant
+        </label>
+      </div>
+      <div class="field-row" id="ctf-ads-budget-row" style="${draft.fields.ads === 'true' ? '' : 'display:none;'}">
+        <div class="field"><label>Advertentiebudget (optioneel, ter info in het contract)</label><input type="text" id="ctf-adsBudget" placeholder="Bv. €500/maand, rechtstreeks aan Meta" value="${escapeAttr(draft.fields.adsBudget || '')}"></div>
+        <div></div>
+      </div>
+
       <details open style="margin:14px 0;">
         <summary style="cursor:pointer; font-size:12.5px; color:var(--text-dim);">Overige contractvoorwaarden en partijgegevens</summary>
         <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
@@ -213,7 +224,7 @@ async function openContractBuilder(existing) {
   `, { wide: true });
 
   const form = document.getElementById('ct-form');
-  const fieldIds = ['smName', 'smAdr', 'smVat', 'smMail', 'clName', 'clAdr', 'clVat', 'clContact', 'hourly', 'payterm', 'booking', 'revisions', 'archive', 'court', 'plaats', 'ver'];
+  const fieldIds = ['smName', 'smAdr', 'smVat', 'smMail', 'clName', 'clAdr', 'clVat', 'clContact', 'hourly', 'payterm', 'booking', 'revisions', 'archive', 'court', 'plaats', 'ver', 'adsBudget'];
 
   function readDraft() {
     draft.pack_key = document.getElementById('ctf-pack').value;
@@ -229,6 +240,7 @@ async function openContractBuilder(existing) {
       if (el) draft.fields[k] = el.value.trim();
     });
     draft.fields.plaats2 = draft.fields.plaats;
+    draft.fields.ads = document.getElementById('ctf-ads').checked ? 'true' : 'false';
   }
   function refreshPreview() {
     readDraft();
@@ -241,6 +253,10 @@ async function openContractBuilder(existing) {
     document.getElementById('ctf-price').value = pack.price;
     document.getElementById('ctf-items').value = pack.items.join('\n');
     document.getElementById('ctf-packname').value = pack.name;
+    refreshPreview();
+  });
+  document.getElementById('ctf-ads').addEventListener('change', (e) => {
+    document.getElementById('ctf-ads-budget-row').style.display = e.target.checked ? '' : 'none';
     refreshPreview();
   });
 

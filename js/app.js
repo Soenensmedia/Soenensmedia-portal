@@ -11,6 +11,7 @@ import { renderDeadlines } from './deadlines.js';
 import { renderContent } from './content.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
 import { renderClientView, openEditNameModal } from './clientView.js';
+import { openSearchModal } from './search.js';
 import { showToast } from './toast.js';
 
 const loginView = document.getElementById('login-view');
@@ -71,6 +72,7 @@ document.getElementById('reset-password-form').addEventListener('submit', async 
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await signOut();
 });
+document.getElementById('global-search-btn').addEventListener('click', () => openSearchModal());
 document.getElementById('client-logout-btn').addEventListener('click', async () => {
   await signOut();
 });

@@ -133,6 +133,23 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .view-header h1 { font-size: 1.8rem; color: #fff; }
 
 /* ══════════ DASHBOARD ══════════ */
+/* ══════════ DASHBOARD: VANDAAG ══════════ */
+.today-panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 18px; margin-bottom: 18px;
+}
+.today-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
+.today-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #161616; }
+.today-row:last-child { border-bottom: none; padding-bottom: 0; }
+.today-row-deadline { cursor: pointer; }
+.today-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.today-dot-deadline { background: var(--red); }
+.today-time { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; min-width: 40px; }
+.today-label { font-size: 13px; color: #fff; flex: 1; }
+.today-sub { color: var(--text-dim); font-weight: 400; }
+.today-badge { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.today-badge-overdue { color: #e07070; }
+
 /* ══════════ DASHBOARD: AANDACHT NODIG ══════════ */
 .attention-panel {
   background: linear-gradient(135deg, #1a0d0d, var(--panel));
@@ -153,6 +170,11 @@ main { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .kanban-col.drag-over { background: #1a1010; border-color: var(--red); }
 .kanban-col-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin-bottom: 10px; display: flex; justify-content: space-between; }
 .kanban-col-count { color: var(--text-faint); }
+.kanban-toggle-afgerond {
+  width: 100%; margin-top: 4px; padding: 6px 0; background: transparent; border: none;
+  color: var(--text-dim); font-size: 11.5px; cursor: pointer; text-align: center;
+}
+.kanban-toggle-afgerond:hover { color: var(--red); }
 
 .project-card {
   position: relative; background: var(--paneld); border: 1px solid var(--line); border-radius: 6px;
@@ -237,6 +259,18 @@ table.log-table tr:last-child td { border-bottom: none; }
 .status-select-inline { margin-bottom: 10px; }
 
 .empty-note { color: var(--text-faint); font-size: 12px; padding: 8px 0; }
+
+/* ══════════ ZOEKEN ══════════ */
+.search-results { margin-top: 14px; max-height: 340px; overflow-y: auto; }
+.search-group-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); margin: 14px 0 6px; }
+.search-group-label:first-child { margin-top: 0; }
+.search-result-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 6px; cursor: pointer;
+}
+.search-result-row:hover { background: var(--paneld); }
+.search-result-title { font-size: 13.5px; color: #fff; }
+.search-result-sub { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 
 .fab { position: fixed; bottom: 26px; right: 26px; background: var(--red); color: #fff; width: 52px; height: 52px; border-radius: 50%; font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(224,53,53,.4); }
 

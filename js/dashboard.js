@@ -1,4 +1,4 @@
-import { state, STATUS_ORDER, STATUS_LABELS, fmtDate } from './state.js';
+import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtTime } from './state.js';
 import { escapeHtml } from './util.js';
 import { createProject, updateProject, notifyStatusChange, getPortalPhotoUrl } from './data.js';
 import { openModal, closeModal } from './modal.js';
@@ -6,8 +6,46 @@ import { openProjectDetail } from './projectDetail.js';
 import { openClientForm } from './clients.js';
 import { showToast } from './toast.js';
 import { hasUnseenClientActivity } from './notifications.js';
+import { TYPE_COLOR_VAR } from './agenda.js';
 
 const RETAINER_RENEWAL_WARNING_DAYS = 30;
+const DEFAULT_AFGEROND_LIMIT = 5;
+let showAllAfgerond = false;
+
+function todayHtml() {
+  const now = new Date();
+  const todayStr = now.toDateString();
+
+  const events = state.events
+    .filter((e) => new Date(e.start_time).toDateString() === todayStr)
+    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+  const deadlineItems = state.projects
+    .filter((p) => p.deadline && p.status !== 'afgerond' && p.status !== 'verzonden' && new Date(p.deadline) <= now)
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+  if (!events.length && !deadlineItems.length) return '';
+
+  return `
+    <div class="today-panel">
+      <div class="today-title">Vandaag</div>
+      ${events.map((e) => `
+        <div class="today-row">
+          <span class="today-dot" style="background:var(${TYPE_COLOR_VAR[e.event_type] || '--c-other'})"></span>
+          <span class="today-time">${fmtTime(new Date(e.start_time))}</span>
+          <span class="today-label">${escapeHtml(e.title)}</span>
+        </div>`).join('')}
+      ${deadlineItems.map((p) => {
+        const overdue = new Date(p.deadline) < new Date(now.toDateString());
+        return `
+        <div class="today-row today-row-deadline" data-id="${p.id}">
+          <span class="today-dot today-dot-deadline"></span>
+          <span class="today-label">${escapeHtml(p.title)} <span class="today-sub">— ${escapeHtml(p.client_name)}</span></span>
+          <span class="today-badge ${overdue ? 'today-badge-overdue' : ''}">${overdue ? 'Deadline verlopen' : 'Deadline vandaag'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
 
 function attentionItems() {
   const items = [];
@@ -61,6 +99,14 @@ function attentionHtml() {
 }
 
 export function renderDashboard() {
+  const todayContainer = document.getElementById('today-container');
+  if (todayContainer) {
+    todayContainer.innerHTML = todayHtml();
+    todayContainer.querySelectorAll('.today-row-deadline').forEach((el) => {
+      el.addEventListener('click', () => openProjectDetail(el.dataset.id));
+    });
+  }
+
   const attentionContainer = document.getElementById('attention-container');
   if (attentionContainer) {
     attentionContainer.innerHTML = attentionHtml();
@@ -78,13 +124,30 @@ export function renderDashboard() {
 
   const container = document.getElementById('kanban-container');
   container.innerHTML = STATUS_ORDER.map((status) => {
-    const projects = state.projects.filter((p) => p.status === status);
+    const allInStatus = state.projects.filter((p) => p.status === status);
+    let projects = allInStatus;
+    let showToggle = false;
+    if (status === 'afgerond') {
+      projects = [...allInStatus].sort((a, b) =>
+        new Date(b.status_changed_at || b.created_at || 0) - new Date(a.status_changed_at || a.created_at || 0));
+      showToggle = projects.length > DEFAULT_AFGEROND_LIMIT;
+      if (!showAllAfgerond && showToggle) projects = projects.slice(0, DEFAULT_AFGEROND_LIMIT);
+    }
     return `
       <div class="kanban-col" data-status="${status}">
-        <div class="kanban-col-title"><span>${STATUS_LABELS[status]}</span><span class="kanban-col-count">${projects.length}</span></div>
+        <div class="kanban-col-title"><span>${STATUS_LABELS[status]}</span><span class="kanban-col-count">${allInStatus.length}</span></div>
         ${projects.map(cardHtml).join('')}
+        ${showToggle ? `<button type="button" class="kanban-toggle-afgerond">${showAllAfgerond ? 'Toon minder' : `+ ${allInStatus.length - DEFAULT_AFGEROND_LIMIT} meer tonen`}</button>` : ''}
       </div>`;
   }).join('');
+
+  container.querySelectorAll('.kanban-toggle-afgerond').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showAllAfgerond = !showAllAfgerond;
+      renderDashboard();
+    });
+  });
 
   container.querySelectorAll('.project-card').forEach((el) => {
     el.addEventListener('click', () => openProjectDetail(el.dataset.id));

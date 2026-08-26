@@ -8,7 +8,7 @@ const START_HOUR = 7;
 const END_HOUR = 22;
 const HOUR_PX = 48;
 
-const TYPE_COLOR_VAR = {
+export const TYPE_COLOR_VAR = {
   shoot: '--c-shoot',
   edit: '--c-edit',
   business: '--c-business',

@@ -569,3 +569,14 @@ Feedback op een screenshot: het startscherm van de klant ("Mijn projecten") oogd
 - Verder dezelfde inhoud (welkomstgids, projecttegels) maar met wat strakkere ruimte ertussen.
 
 Geen nieuwe SQL, geen configuratie nodig — puur een weergave-aanpassing.
+
+## Fase 30 — Vandaag-overzicht, archief-filter, zoeken, klant-aandacht (nieuw)
+
+Vier verbeteringen op basis van de vraag "wat ontbreekt er nog qua duidelijkheid" — allemaal puur weergave/logica, geen nieuwe tabellen.
+
+- **"Vandaag"-paneel** bovenaan het Dashboard: toont in 1 blik de agenda-items van vandaag én de deadlines die vandaag vervallen of al verlopen zijn. Los van de bestaande Agenda- en Deadlines-tabs, die blijven voor het volledige overzicht.
+- **"Afgerond"-kolom niet meer eindeloos lang**: toont voortaan standaard enkel de 5 recentste afgeronde opdrachten, met een "+X meer tonen"-knop eronder om de rest te zien. Zo blijft het bord overzichtelijk naarmate er meer opdrachten afgerond geraken.
+- **Zoekfunctie**: het vergrootglas-icoontje bovenaan (naast "Uitloggen") opent een zoekvenster dat live filtert doorheen al je opdrachten en klanten — klikken op een resultaat opent het meteen.
+- **"Voor jou te doen"-paneel bij de klant**: symmetrisch aan jouw "Aandacht nodig", maar dan voor de klant zelf — toont per project of er nog een contract te ondertekenen is, een idee/script op goedkeuring wacht, of jij als laatste iets hebt geantwoord waar de klant nog niet op gereageerd heeft.
+
+Geen nieuwe SQL, geen configuratie nodig.

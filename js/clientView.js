@@ -113,6 +113,51 @@ function markStatusSeen(p) {
   try { localStorage.setItem(statusSeenKey(p.id), p.status_changed_at); } catch {}
 }
 
+function clientAttentionItems() {
+  const items = [];
+  state.clientProjects.forEach((p) => {
+    if (CLIENT_DONE_STATUSES.includes(p.status)) return;
+
+    if ((p.agreement_content || p.agreement_bestand_path) && !p.agreement_signed_at) {
+      items.push({ id: p.id, title: p.title, reason: 'Contract nog te ondertekenen' });
+    }
+
+    const pendingConcepts = (state.clientConceptsByProject[p.id] || []).filter((c) => c.status === 'in_afwachting');
+    if (pendingConcepts.length) {
+      items.push({
+        id: p.id,
+        title: p.title,
+        reason: pendingConcepts.length === 1
+          ? 'Idee/script wacht op jouw goedkeuring'
+          : `${pendingConcepts.length} ideeën/scripts wachten op jouw goedkeuring`,
+      });
+    }
+
+    const thread = (state.clientFeedbackByProject[p.id] || [])
+      .filter((f) => !f.concept_id)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const last = thread[thread.length - 1];
+    if (last && last.author_user_id !== p.client_user_id) {
+      items.push({ id: p.id, title: p.title, reason: 'Nieuw antwoord van SoenensMedia' });
+    }
+  });
+  return items;
+}
+
+function clientAttentionHtml() {
+  const items = clientAttentionItems();
+  if (!items.length) return '';
+  return `
+    <div class="attention-panel">
+      <div class="attention-title">Voor jou te doen (${items.length})</div>
+      ${items.map((it) => `
+        <div class="attention-row" data-id="${it.id}">
+          <span class="attention-project">${escapeHtml(it.title)}</span>
+          <span class="attention-reason">${escapeHtml(it.reason)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
 function contactCardHtml() {
   const email = state.clientFinSettings?.contact_email;
   const tel = state.clientFinSettings?.contact_telefoon;
@@ -162,6 +207,7 @@ function renderClientList() {
       <div class="client-welcome-sub">${count === 1 ? '1 project' : count + ' projecten'} klaarstaand voor jou</div>
     </div>
     ${welcomeGuideHtml()}
+    ${clientAttentionHtml()}
     ${active.length ? `
       ${done.length ? '<div class="client-group-label">Actief</div>' : ''}
       <div class="client-project-tiles">${active.map(tileHtml).join('')}</div>` : ''}
@@ -172,6 +218,10 @@ function renderClientList() {
   `;
 
   container.querySelectorAll('.client-project-tile').forEach((el) => {
+    el.addEventListener('click', () => renderClientProjectDetail(el.dataset.id));
+  });
+
+  container.querySelectorAll('.attention-row').forEach((el) => {
     el.addEventListener('click', () => renderClientProjectDetail(el.dataset.id));
   });
 

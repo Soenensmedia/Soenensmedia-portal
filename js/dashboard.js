@@ -4,11 +4,13 @@ import { createProject, updateProject, notifyStatusChange, getPortalPhotoUrl } f
 import { openModal, closeModal } from './modal.js';
 import { openProjectDetail } from './projectDetail.js';
 import { openClientForm } from './clients.js';
+import { openEquipmentForm } from './equipment.js';
 import { showToast } from './toast.js';
-import { hasUnseenClientActivity } from './notifications.js';
+import { hasUnseenClientActivity, isConceptApprovalUnseen, markConceptSeen } from './notifications.js';
 import { TYPE_COLOR_VAR } from './agenda.js';
 
 const RETAINER_RENEWAL_WARNING_DAYS = 30;
+const ONDERHOUD_WARNING_DAYS = 30;
 const DEFAULT_AFGEROND_LIMIT = 5;
 let showAllAfgerond = false;
 
@@ -81,6 +83,26 @@ function attentionItems() {
     items.push({ type: 'client', id: c.id, title: c.naam, sub: 'Retainer', reason });
   });
 
+  (state.allConcepts || []).forEach((c) => {
+    if (!isConceptApprovalUnseen(c)) return;
+    const p = state.projects.find((x) => x.id === c.project_id);
+    if (!p) return;
+    items.push({ type: 'concept', id: c.id, projectId: p.id, title: p.title, sub: p.client_name, reason: `"${c.title}" goedgekeurd door klant` });
+  });
+
+  (state.equipment || []).forEach((eq) => {
+    if (!eq.onderhoud_datum) return;
+    const due = new Date(eq.onderhoud_datum);
+    const daysLeft = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    if (daysLeft > ONDERHOUD_WARNING_DAYS) return;
+    const reason = daysLeft < 0
+      ? `Onderhoud verlopen op ${fmtDate(due)}`
+      : daysLeft === 0
+        ? 'Onderhoud vandaag gepland'
+        : `Onderhoud over ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dagen'}`;
+    items.push({ type: 'equipment', id: eq.id, title: eq.naam, sub: 'Onderhoud', reason });
+  });
+
   return items;
 }
 
@@ -91,7 +113,7 @@ function attentionHtml() {
     <div class="attention-panel">
       <div class="attention-title">Aandacht nodig (${items.length})</div>
       ${items.map((it) => `
-        <div class="attention-row" data-type="${it.type}" data-id="${it.id}">
+        <div class="attention-row" data-type="${it.type}" data-id="${it.id}" ${it.projectId ? `data-project-id="${it.projectId}"` : ''}>
           <span class="attention-project">${escapeHtml(it.title)} <span class="attention-client">— ${escapeHtml(it.sub)}</span></span>
           <span class="attention-reason">${escapeHtml(it.reason)}</span>
         </div>`).join('')}
@@ -115,6 +137,13 @@ export function renderDashboard() {
         if (el.dataset.type === 'client') {
           const client = state.clients.find((c) => c.id === el.dataset.id);
           if (client) openClientForm(client);
+        } else if (el.dataset.type === 'concept') {
+          markConceptSeen(el.dataset.id);
+          openProjectDetail(el.dataset.projectId);
+          renderDashboard();
+        } else if (el.dataset.type === 'equipment') {
+          const eq = state.equipment.find((x) => x.id === el.dataset.id);
+          if (eq) openEquipmentForm(eq);
         } else {
           openProjectDetail(el.dataset.id);
         }

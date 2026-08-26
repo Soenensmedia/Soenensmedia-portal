@@ -638,3 +638,13 @@ Beide tabbladen zijn uit het menu gehaald, samen met `js/scripting.js` en `js/co
 - **Let op:** de goedkeuring/feedback-flow die de klant zelf ziet ("Ideeën & Scripts" bij hen) blijft gewoon bestaan — dat draait op de `project_concepts`-tabel, die nog steeds gebruikt wordt door "Stuur naar klant" in het Contentsysteem. Enkel jouw manuele beheerscherm daarvoor is weg; de data en de klant-kant zijn onaangeroerd.
 
 Geen SQL, geen dataverlies — puur 2 tabbladen en de bijhorende ongebruikte code weggehaald.
+
+## Fase 35 — 3 verbeteringen na eigen doorlichting (nieuw)
+
+Na het weghalen van Scripting viel me zelf iets op, en ik voegde meteen 2 kleinere dingen toe die ik eerder al aanhaalde:
+
+- **Klant-goedkeuring van een idee/script zichtbaar in "Aandacht nodig"** — sinds Scripting weg is, had je nergens meer gezien of een klant een idee/script goedkeurde. Verschijnt nu als "'[titel]' goedgekeurd door klant" — klikken opent de opdracht en markeert het als gezien.
+- **Onderhoud-datum van apparatuur** verschijnt nu ook in "Aandacht nodig" (30 dagen vooraf, net als bij retainer-verlengingen) — klikken opent meteen die apparatuur-fiche.
+- **Zoekfunctie doorzoekt nu ook facturen en offertes** (klant, omschrijving, nummer) — klikken springt naar de Financiën-tab en opent meteen de juiste factuur/offerte.
+
+Geen nieuwe SQL, geen configuratie nodig.

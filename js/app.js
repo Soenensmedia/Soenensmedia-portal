@@ -1,6 +1,6 @@
 import { signIn, signOut, onAuthChange, requestPasswordReset, updatePassword, getSession } from './auth.js';
 import { state } from './state.js';
-import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback } from './data.js';
+import { fetchProjects, fetchEvents, fetchTimeEntries, fetchOwnProfile, fetchClients, fetchAllFeedback, fetchAllConcepts, fetchEquipment } from './data.js';
 import { renderDashboard, openNewProjectModal } from './dashboard.js';
 import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
@@ -117,16 +117,18 @@ async function showAppShell() {
   loginView.classList.add('hidden');
   appShell.classList.remove('hidden');
   try {
-    const [projects, events, timeEntries, clients] = await Promise.all([
+    const [projects, events, timeEntries, clients, equipment] = await Promise.all([
       fetchProjects(),
       fetchEvents(),
       fetchTimeEntries(),
       fetchClients(),
+      fetchEquipment(),
     ]);
     state.projects = projects;
     state.events = events;
     state.timeEntries = timeEntries;
     state.clients = clients;
+    state.equipment = equipment;
   } catch (err) {
     showToast('Kon data niet laden: ' + err.message, true);
   }
@@ -134,6 +136,11 @@ async function showAppShell() {
     state.allFeedback = await fetchAllFeedback();
   } catch {
     state.allFeedback = [];
+  }
+  try {
+    state.allConcepts = await fetchAllConcepts();
+  } catch {
+    state.allConcepts = [];
   }
   switchView('dashboard');
 }

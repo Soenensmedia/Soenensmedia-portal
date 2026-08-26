@@ -77,6 +77,9 @@ export const fetchAllFeedback = () =>
 export const fetchProjectConcepts = (projectId) =>
   sb.from('project_concepts').select('*').eq('project_id', projectId).order('created_at').then(unwrap);
 
+export const fetchAllConcepts = () =>
+  sb.from('project_concepts').select('*').order('created_at').then(unwrap);
+
 export const createConcept = (payload) =>
   sb.from('project_concepts').insert(payload).select().single().then(unwrap);
 

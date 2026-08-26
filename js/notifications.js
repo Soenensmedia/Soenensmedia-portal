@@ -33,3 +33,31 @@ export function markProjectSeen(p) {
     /* privémodus o.i.d. — geen probleem, badge blijft dan gewoon staan */
   }
 }
+
+// Concepten (ideeën/scripts) die de klant goedkeurde: er is geen timestamp
+// voor "wanneer goedgekeurd", dus houden we een set van reeds-geziene
+// concept-id's bij i.p.v. een tijdstip-vergelijking.
+const SEEN_CONCEPTS_KEY = 'sm_admin_seen_concepts';
+
+function getSeenConceptIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_CONCEPTS_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+export function isConceptApprovalUnseen(concept) {
+  if (concept.status !== 'goedgekeurd') return false;
+  return !getSeenConceptIds().has(concept.id);
+}
+
+export function markConceptSeen(conceptId) {
+  try {
+    const seen = getSeenConceptIds();
+    seen.add(conceptId);
+    localStorage.setItem(SEEN_CONCEPTS_KEY, JSON.stringify(Array.from(seen)));
+  } catch {
+    /* privémodus o.i.d. — geen probleem, badge blijft dan gewoon staan */
+  }
+}

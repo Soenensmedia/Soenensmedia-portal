@@ -70,6 +70,19 @@ export async function renderFinance() {
   renderFinShell();
 }
 
+// Vanuit de zoekfunctie: laad de Financiën-tab, spring naar het juiste
+// sub-tabblad en open meteen de bewerk-modal van het gevonden document.
+export async function openFinanceRecordFromSearch(type, id) {
+  await renderFinance();
+  FIN.activeTab = type;
+  renderFinShell();
+  const record = (type === 'facturen' ? FIN.facturen : FIN.offertes).find((x) => x.id === id);
+  if (record) {
+    if (type === 'facturen') openFactuurModal(record);
+    else openOfferteModal(record);
+  }
+}
+
 function renderFinShell() {
   const container = document.getElementById('finance-container');
   container.innerHTML = `

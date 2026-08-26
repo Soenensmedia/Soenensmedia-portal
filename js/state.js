@@ -36,6 +36,8 @@ export const state = {
   clients: [],
   feedback: [],
   allFeedback: [],
+  allConcepts: [],
+  equipment: [],
   currentView: 'dashboard',
   weekStart: startOfWeek(new Date()),
   activeProjectId: null,

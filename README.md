@@ -580,3 +580,13 @@ Vier verbeteringen op basis van de vraag "wat ontbreekt er nog qua duidelijkheid
 - **"Voor jou te doen"-paneel bij de klant**: symmetrisch aan jouw "Aandacht nodig", maar dan voor de klant zelf — toont per project of er nog een contract te ondertekenen is, een idee/script op goedkeuring wacht, of jij als laatste iets hebt geantwoord waar de klant nog niet op gereageerd heeft.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 31 — Volledig portaal naar lichte huisstijl (nieuw)
+
+Op jouw vraag: het hele portaal (admin én klant) omgebouwd van de donkere naar een lichte, "papieren" stijl — zelfde rood-accent en fonts, maar `#0a0a0a` achtergrond werd `#f6f6f3`, panelen werden wit, tekst werd donker i.p.v. licht.
+
+- Alle kleurtokens in `styles.css` zijn herzien (badges, panelen, borders, hover-states) zodat contrast en leesbaarheid overal kloppen op de nieuwe lichte achtergrond.
+- Het logo (`assets/logo.png`) was wit getekend voor de donkere achtergrond en dus onzichtbaar geworden — vervangen door een donkere versie. De originele witte versie staat bewaard als `assets/logo-original-white.png` mocht je ooit terug willen.
+- De "gloed"-header bij de klant (Fase 29) is aangepast: minder donker, subtieler, past beter bij een lichte kaart.
+
+Geen nieuwe SQL. Puur CSS + het logo-bestand — geen enkele functionaliteit is gewijzigd.

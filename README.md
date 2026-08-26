@@ -685,3 +685,20 @@ Nieuw tabblad **"Contracten"**, gebaseerd op het contract-artifact dat je liet n
 De 8 tabbladen bovenaan zijn ingedeeld in 3 logische groepen (met een dun lijntje ertussen): **Werk** (Dashboard, Agenda, Deadlines, Uren), **Klant** (Klanten, Contentsysteem, Contracten) en **Bedrijf** (Financiën, Equipment). Puur visueel — geen enkele tab is verplaatst of hernoemd, dit maakt de balk enkel overzichtelijker.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 40 — Visueel overzicht op het Financiën-dashboard (nieuw)
+
+Het Financiën-dashboard was tot nu toe enkel een rij cijfer-kaartjes. Op basis van het voorbeeld dat je aanleverde (het "Personal Finance Tracker"-dashboard) is er nu een echt overzicht bovenaan, met dezelfde soort elementen maar gevuld met jouw eigen bedrijfscijfers i.p.v. persoonlijke financiën:
+
+- Een grote kaart met de omzet van dit jaar en het aantal openstaande facturen.
+- Kleine kaartjes met de omzet en kosten van deze maand, elk met een minigrafiekje van de laatste 6 maanden.
+- Een voortgangsbalk voor het omzetdoel van deze maand (in te stellen bij Instellingen).
+- Een staafdiagram van de omzet per klant dit jaar.
+- Een meldingenpaneel met vervallen facturen en het lopende BTW-saldo.
+- Een grote lijngrafiek van omzet vs. kosten over de laatste 12 maanden.
+- Een donutgrafiek van vaste vs. eenmalige kosten dit jaar.
+
+De bestaande cijferkaartjes (winstmarge, reserve, vaste kosten, gem. projectwaarde, effectief uurtarief, BTW-saldo) blijven eronder staan.
+
+### Eenmalig instellen
+Geen SQL — enkel een nieuwe externe bibliotheek (Chart.js, via CDN, zelfde manier als de bestaande PDF/zip-bibliotheken) toegevoegd in `index.html`. Gewoon de map opnieuw pushen/deployen, verder niets te doen.

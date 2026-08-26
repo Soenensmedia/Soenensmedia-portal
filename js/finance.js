@@ -37,6 +37,7 @@ const FIN = {
     bedrijfsnaam: '', bedrijfsadres: '', ondernemingsnummer: '', iban: '', betalingstermijn_dagen: 30,
   },
   btwCursor: new Date(),
+  charts: {},
 };
 
 const eur = (n) => '€' + (Math.round((n || 0) * 100) / 100).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -237,12 +238,39 @@ function adviesFor(prijs, vrijeRuimte) {
 }
 
 // ── DASHBOARD ────────────────────────────────────────────
+// Laatste `n` maanden (incl. huidige), oudste eerst — gebruikt voor zowel de
+// sparklines als de grote omzet/kosten-grafiek.
+function lastMonths(n) {
+  const now = new Date();
+  const months = [];
+  for (let i = n - 1; i >= 0; i--) {
+    months.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
+  }
+  return months;
+}
+function monthKey(d) { return `${d.getFullYear()}-${d.getMonth()}`; }
+function monthlySums(items, dateField, amountField, months) {
+  const sums = new Map(months.map((m) => [monthKey(m), 0]));
+  items.forEach((it) => {
+    if (!it[dateField]) return;
+    const d = new Date(it[dateField]);
+    const key = monthKey(d);
+    if (sums.has(key)) sums.set(key, sums.get(key) + Number(it[amountField] || 0));
+  });
+  return months.map((m) => sums.get(monthKey(m)));
+}
+
+function destroyChart(key) {
+  if (FIN.charts[key]) { FIN.charts[key].destroy(); delete FIN.charts[key]; }
+}
+
 function renderFinDashboard(el) {
   const now = new Date();
   const thisYear = now.getFullYear();
 
   const openstaande = FIN.facturen.filter((f) => f.status === 'open');
   const openstaandeBedrag = openstaande.reduce((s, f) => s + Number(f.bedrag) * (1 + Number(f.btw) / 100), 0);
+  const vervallen = openstaande.filter((f) => f.vervaldatum && new Date(f.vervaldatum) < now);
 
   const facturenDitJaar = FIN.facturen.filter((f) => new Date(f.datum).getFullYear() === thisYear);
   const omzetJaar = facturenDitJaar.reduce((s, f) => s + Number(f.bedrag), 0);
@@ -262,6 +290,7 @@ function renderFinDashboard(el) {
   });
   const omzetMaand = facturenDitMaand.reduce((s, f) => s + Number(f.bedrag), 0);
   const doelMaand = Number(FIN.settings.omzet_doel_maand) || 0;
+  const doelPct = doelMaand > 0 ? Math.min(100, Math.round((omzetMaand / doelMaand) * 100)) : 0;
 
   const gemProjectwaarde = facturenDitJaar.length ? omzetJaar / facturenDitJaar.length : 0;
 
@@ -270,20 +299,83 @@ function renderFinDashboard(el) {
     .reduce((s, t) => s + Number(t.hours), 0);
   const uurtarief = urenDitJaar > 0 ? omzetJaar / urenDitJaar : 0;
 
+  const months = lastMonths(12);
+  const monthLabels = months.map((m) => MONTHS_FULL[m.getMonth()].slice(0, 3));
+  const omzetSeries = monthlySums(FIN.facturen, 'datum', 'bedrag', months);
+  const kostenSeries = monthlySums(FIN.kosten, 'datum', 'bedrag', months);
+  const sparkMonths = months.slice(-6);
+  const omzetSpark = omzetSeries.slice(-6);
+  const kostenSpark = kostenSeries.slice(-6);
+
+  const klantTotals = new Map();
+  facturenDitJaar.forEach((f) => {
+    const naam = f.klant || 'Onbekend';
+    klantTotals.set(naam, (klantTotals.get(naam) || 0) + Number(f.bedrag));
+  });
+  const topKlanten = [...klantTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  const kostenVast = kostenDitJaar.filter((k) => k.type === 'vast').reduce((s, k) => s + Number(k.bedrag), 0);
+  const kostenEenmalig = kostenDitJaar.filter((k) => k.type !== 'vast').reduce((s, k) => s + Number(k.bedrag), 0);
+
   const kpis = [
-    { label: 'Openstaande facturen', value: eur0(openstaandeBedrag), sub: `${openstaande.length} open` },
-    { label: 'Omzet dit jaar', value: eur0(omzetJaar), sub: 'excl. btw' },
     { label: btwSaldo >= 0 ? 'BTW te betalen (huidig)' : 'BTW terug te vorderen', value: eur0(Math.abs(btwSaldo)), sub: periodLabel(now, FIN.settings.period) },
     { label: 'Winstmarge', value: winstmarge + '%', sub: 'omzet − kosten, dit jaar' },
     { label: 'Reserve', value: vasteKostenMnd > 0 ? reserveMaanden.toFixed(1) + ' mnd' : '—', sub: 'op basis van banksaldo' },
     { label: 'Vaste kosten / mnd', value: eur0(vasteKostenMnd), sub: '' },
-    { label: 'Omzet deze maand vs. doel', value: eur0(omzetMaand), sub: doelMaand > 0 ? `doel: ${eur0(doelMaand)} (${Math.round((omzetMaand / doelMaand) * 100)}%)` : 'geen doel ingesteld — zie Instellingen' },
     { label: 'Gem. projectwaarde', value: eur0(gemProjectwaarde), sub: 'per factuur, dit jaar' },
     { label: 'Effectief uurtarief', value: urenDitJaar > 0 ? eur(uurtarief) + '/u' : '—', sub: urenDitJaar > 0 ? `${urenDitJaar}u gelogd dit jaar` : 'nog geen uren gelogd' },
   ];
 
   el.innerHTML = `
-    <div class="stats-row">
+    <div class="fin-overview">
+      <div class="fin-hero">
+        <div class="fin-hero-label">Omzet dit jaar</div>
+        <div class="fin-hero-value">${eur0(omzetJaar)}</div>
+        <div class="fin-hero-sub">${openstaande.length} openstaande factu${openstaande.length === 1 ? 'ur' : 'ren'} — ${eur0(openstaandeBedrag)}</div>
+      </div>
+
+      <div class="fin-small-card">
+        <div class="fin-small-label">Omzet</div>
+        <div class="fin-small-value">${eur0(omzetMaand)}</div>
+        <div class="fin-canvas-wrap"><canvas id="fin-spark-omzet"></canvas></div>
+      </div>
+      <div class="fin-small-card">
+        <div class="fin-small-label">Kosten</div>
+        <div class="fin-small-value">${eur0(kostenSpark[kostenSpark.length - 1] || 0)}</div>
+        <div class="fin-canvas-wrap"><canvas id="fin-spark-kosten"></canvas></div>
+      </div>
+
+      <div class="fin-goal-card">
+        <div class="fin-small-label">Omzetdoel deze maand</div>
+        <div class="fin-goal-row"><span class="fin-goal-pct">${doelMaand > 0 ? doelPct + '%' : '—'}</span><span class="fin-goal-amt">${eur0(omzetMaand)} / ${doelMaand > 0 ? eur0(doelMaand) : '—'}</span></div>
+        <div class="fin-goal-bar"><div class="fin-goal-bar-fill" style="width:${doelPct}%"></div></div>
+      </div>
+
+      <div class="fin-chart-card">
+        <div class="fin-small-label">Omzet per klant, dit jaar</div>
+        <div class="fin-canvas-wrap"><canvas id="fin-chart-klanten"></canvas></div>
+      </div>
+
+      <div class="fin-notif-panel">
+        <div class="fin-small-label">Meldingen</div>
+        ${vervallen.length
+          ? vervallen.slice(0, 4).map((f) => `<div class="fin-notif-row fin-notif-urgent">Factuur ${escapeHtml(f.factuurnummer || f.klant || '')} is vervallen (${fmtDateShortNL(f.vervaldatum)})</div>`).join('')
+          : '<div class="fin-notif-row fin-notif-ok">Geen vervallen facturen</div>'}
+        ${btwSaldo >= 0 ? `<div class="fin-notif-row">BTW-saldo te betalen: ${eur0(btwSaldo)}</div>` : ''}
+      </div>
+
+      <div class="fin-chart-card fin-chart-wide">
+        <div class="fin-small-label">Omzet &amp; kosten per maand</div>
+        <div class="fin-canvas-wrap"><canvas id="fin-chart-trend"></canvas></div>
+      </div>
+
+      <div class="fin-chart-card">
+        <div class="fin-small-label">Kosten dit jaar — vast vs. eenmalig</div>
+        <div class="fin-canvas-wrap"><canvas id="fin-chart-kosten-verdeling"></canvas></div>
+      </div>
+    </div>
+
+    <div class="stats-row" style="margin-top:20px;">
       ${kpis.map((k) => `
         <div class="stat-card">
           <div class="stat-label">${escapeHtml(k.label)}</div>
@@ -292,6 +384,90 @@ function renderFinDashboard(el) {
         </div>`).join('')}
     </div>
   `;
+
+  drawFinCharts({ sparkMonths, omzetSpark, kostenSpark, monthLabels, omzetSeries, kostenSeries, topKlanten, kostenVast, kostenEenmalig });
+}
+
+function drawFinCharts({ sparkMonths, omzetSpark, kostenSpark, monthLabels, omzetSeries, kostenSeries, topKlanten, kostenVast, kostenEenmalig }) {
+  if (typeof window.Chart === 'undefined') return;
+  const styles = getComputedStyle(document.documentElement);
+  const red = styles.getPropertyValue('--red').trim() || '#e03535';
+  const green = '#16a34a';
+  const textDim = styles.getPropertyValue('--text-dim').trim() || '#6b6b72';
+  const line = styles.getPropertyValue('--line').trim() || '#dedcd6';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.color = textDim;
+
+  ['spark-omzet', 'spark-kosten', 'chart-klanten', 'chart-trend', 'chart-kosten-verdeling'].forEach(destroyChart);
+
+  const sparkLabels = sparkMonths.map((m) => MONTHS_FULL[m.getMonth()].slice(0, 3));
+
+  const omzetCanvas = document.getElementById('fin-spark-omzet');
+  if (omzetCanvas) {
+    FIN.charts['spark-omzet'] = new Chart(omzetCanvas, {
+      type: 'line',
+      data: { labels: sparkLabels, datasets: [{ data: omzetSpark, borderColor: green, backgroundColor: green + '22', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } },
+    });
+  }
+  const kostenCanvas = document.getElementById('fin-spark-kosten');
+  if (kostenCanvas) {
+    FIN.charts['spark-kosten'] = new Chart(kostenCanvas, {
+      type: 'line',
+      data: { labels: sparkLabels, datasets: [{ data: kostenSpark, borderColor: red, backgroundColor: red + '22', fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } },
+    });
+  }
+
+  const klantenCanvas = document.getElementById('fin-chart-klanten');
+  if (klantenCanvas) {
+    FIN.charts['chart-klanten'] = new Chart(klantenCanvas, {
+      type: 'bar',
+      data: {
+        labels: topKlanten.map(([naam]) => naam),
+        datasets: [{ data: topKlanten.map(([, bedrag]) => Math.round(bedrag)), backgroundColor: '#e03535cc', borderRadius: 4, maxBarThickness: 28 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: line }, ticks: { callback: (v) => eur0(v) } } },
+      },
+    });
+  }
+
+  const trendCanvas = document.getElementById('fin-chart-trend');
+  if (trendCanvas) {
+    FIN.charts['chart-trend'] = new Chart(trendCanvas, {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label: 'Omzet', data: omzetSeries.map((v) => Math.round(v)), borderColor: green, backgroundColor: green + '1a', fill: true, tension: 0.3, pointRadius: 2 },
+          { label: 'Kosten', data: kostenSeries.map((v) => Math.round(v)), borderColor: red, backgroundColor: 'transparent', borderDash: [4, 3], tension: 0.3, pointRadius: 2 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true } } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: line }, ticks: { callback: (v) => eur0(v) } } },
+      },
+    });
+  }
+
+  const verdelingCanvas = document.getElementById('fin-chart-kosten-verdeling');
+  if (verdelingCanvas) {
+    FIN.charts['chart-kosten-verdeling'] = new Chart(verdelingCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Vaste kosten', 'Eenmalige kosten'],
+        datasets: [{ data: [Math.round(kostenVast), Math.round(kostenEenmalig)], backgroundColor: ['#e03535', '#f0b8b8'], borderWidth: 0 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } } },
+      },
+    });
+  }
 }
 
 // ── BTW ──────────────────────────────────────────────────

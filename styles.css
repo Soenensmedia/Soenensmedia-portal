@@ -824,3 +824,46 @@ table.cs-plan td { border-bottom: 1px solid var(--line); padding: 10px; vertical
 .doc-legalnote { font-size: 11px; color: var(--text-faint); margin-top: 10px; }
 .doc-agree { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-dim); margin: 14px 0; }
 .doc-agree input { width: auto; margin-top: 2px; }
+
+/* ══════════ FINANCIËN — OVERZICHT ══════════ */
+.fin-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.fin-overview > * { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.fin-small-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); margin-bottom: 8px; }
+
+.fin-hero {
+  grid-column: span 2; background: linear-gradient(135deg, #e03535, #b91c1c); border: none; color: #fff;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.fin-hero-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
+.fin-hero-value { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; line-height: 1; margin: 6px 0; }
+.fin-hero-sub { font-size: 12px; opacity: .85; }
+
+.fin-small-card { grid-column: span 1; display: flex; flex-direction: column; height: 130px; }
+.fin-small-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--text); margin-bottom: 6px; }
+.fin-canvas-wrap { position: relative; width: 100%; flex: 1; }
+.fin-small-card .fin-canvas-wrap { min-height: 40px; }
+
+.fin-goal-card { grid-column: span 1; height: 130px; }
+.fin-goal-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.fin-goal-pct { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--red); }
+.fin-goal-amt { font-size: 11px; color: var(--text-dim); }
+.fin-goal-bar { height: 8px; border-radius: 4px; background: var(--paneld); overflow: hidden; }
+.fin-goal-bar-fill { height: 100%; background: var(--red); border-radius: 4px; }
+
+.fin-chart-card { grid-column: span 2; height: 280px; display: flex; flex-direction: column; }
+.fin-chart-card .fin-canvas-wrap { min-height: 0; }
+.fin-chart-wide { grid-column: span 4; height: 320px; }
+
+.fin-notif-panel { grid-column: span 1; height: 280px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.fin-notif-row { font-size: 12px; padding: 8px 10px; border-radius: 6px; background: var(--paneld); color: var(--text-dim); }
+.fin-notif-row.fin-notif-urgent { background: #fdecec; color: #c62e2e; }
+.fin-notif-row.fin-notif-ok { color: #1a7a3e; background: #e6f4ea; }
+
+@media (max-width: 900px) {
+  .fin-overview { grid-template-columns: repeat(2, 1fr); }
+  .fin-hero, .fin-chart-card, .fin-chart-wide { grid-column: span 2; }
+}
+@media (max-width: 560px) {
+  .fin-overview { grid-template-columns: 1fr; }
+  .fin-hero, .fin-small-card, .fin-goal-card, .fin-chart-card, .fin-chart-wide, .fin-notif-panel { grid-column: span 1; }
+}

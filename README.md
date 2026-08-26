@@ -609,3 +609,10 @@ Nieuwe tab **"Contentsysteem"**, gebaseerd op het format-skeletten-concept dat j
 1. In Supabase: SQL Editor → plak en run [`sql/025_content_strategie.sql`](sql/025_content_strategie.sql) (nieuwe tabellen, admin-only).
 2. Wil je de Decaigny-data er meteen in? Maak eerst de klant **"Decaigny Selected Cars & Vans"** aan (exacte naam) via de Klanten-tab, run daarna [`sql/026_content_strategie_decaigny_data.sql`](sql/026_content_strategie_decaigny_data.sql) — vult automatisch alle 33 ideeën, 5 scripts, hookformules, draaidag en b-roll uit je concept in. Bestaat de klant nog niet, dan doet het script gewoon niets (geen foutmelding).
 3. Voor een nieuwe klant: klant aanmaken → tab Contentsysteem → klant selecteren → "Klant-info" invullen → ideeën/scripts/hooks/draaidag/b-roll zelf opbouwen (of vraag het mij in de chat, dan werk ik ze voor je uit).
+
+### Fase 32b — Mail bij "Stuur naar klant"
+
+Ideeën en scripts in het Contentsysteem zijn standaard enkel voor jou zichtbaar (admin-only tabellen, geen klant-scherm toont ze) — pas bij een bewuste klik op "Stuur naar klant" komt er iets bij de klant terecht. Vanaf nu krijgt de klant daar ook meteen een mail over, zodat hij niet toevallig moet inloggen om het te ontdekken.
+
+1. In Supabase: **Edge Functions** → nieuwe functie **"notify-new-concept"** aanmaken, plak de inhoud van [`supabase/functions/notify-new-concept/index.ts`](supabase/functions/notify-new-concept/index.ts) → Deploy. Gebruikt dezelfde `BREVO_API_KEY`-secret als de andere mailfuncties — hoef je dus niet opnieuw in te stellen.
+2. Geen nieuwe SQL nodig.

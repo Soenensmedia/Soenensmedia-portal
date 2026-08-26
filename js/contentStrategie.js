@@ -9,7 +9,7 @@ import {
   fetchContentDraaidag, createContentDraaidag, deleteContentDraaidag,
   fetchContentBroll, createContentBroll, deleteContentBroll,
   fetchContentPlanner, saveContentPlannerRow, deleteContentPlannerRow,
-  createConcept,
+  createConcept, notifyNewConcept,
 } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
@@ -614,6 +614,12 @@ function openSendModal(kind, item) {
       await createConcept({ project_id: projectId, type, title, content });
       closeModal();
       showToast('Verstuurd naar klant — te zien via Ideeën & Scripts op die opdracht');
+      const project = state.projects.find((p) => p.id === projectId);
+      if (project?.client_user_id) {
+        notifyNewConcept(projectId, title, type)
+          .then(() => showToast('Klant per mail verwittigd'))
+          .catch((err) => showToast('Kon klant niet mailen: ' + err.message, true));
+      }
     } catch (err) { showToast(err.message, true); }
   });
 }

@@ -71,7 +71,6 @@ export function openProjectDetail(id) {
           </div>
           <div class="field"><label>Briefing / omschrijving voor klant</label><textarea id="pd-client-brief" rows="3" placeholder="Korte uitleg over het project, wat er is afgesproken...">${escapeHtml(p.client_brief ?? '')}</textarea></div>
           <div class="field"><label>Deliverables</label><textarea id="pd-deliverables" rows="2" placeholder="Bv. 20 foto's, 1 video van 2 minuten">${escapeHtml(p.deliverables ?? '')}</textarea></div>
-          <button type="button" class="btn btn-ghost btn-small" id="pd-open-scripting">→ Ideeën & Scripts voor dit project</button>
         </div>
 
         <div class="detail-section">
@@ -406,12 +405,6 @@ export function openProjectDetail(id) {
     } catch (err) {
       showToast(err.message, true);
     }
-  });
-
-  document.getElementById('pd-open-scripting').addEventListener('click', () => {
-    state.activeScriptingProjectId = id;
-    closeModal();
-    document.querySelector('.tab-btn[data-view="scripting"]').click();
   });
 
   document.getElementById('pd-reset-agreement')?.addEventListener('click', async () => {

@@ -41,7 +41,6 @@ export const state = {
   activeProjectId: null,
   activeClientProjectId: null,
   activeClientDetailTab: 'overzicht',
-  activeScriptingProjectId: null,
   clientProjects: [],
   clientFeedbackByProject: {},
   clientPhotosByProject: {},

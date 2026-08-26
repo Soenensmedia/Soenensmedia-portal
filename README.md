@@ -628,3 +628,13 @@ Twee verbeteringen op vraag:
 
 1. In Supabase: SQL Editor → plak en run [`sql/027_content_voorbeeldlink.sql`](sql/027_content_voorbeeldlink.sql).
 2. Geen andere stappen — de stijl is puur CSS, geen configuratie nodig.
+
+## Fase 34 — "Scripting" en "Content" tabs verwijderd (op vraag)
+
+Beide tabbladen zijn uit het menu gehaald, samen met `js/scripting.js` en `js/content.js` — je gaf aan dat je ze niet meer nodig hebt nu het Contentsysteem er is.
+
+- **Scripting** (per-opdracht ideeën/scripts manueel beheren) is vervangen door het Contentsysteem, dat rijker is en per klant werkt i.p.v. per opdracht.
+- **Content** (je eigen social-planning, los van klantwerk) is gewoon weg — niets kwam ervoor in de plaats, op je eigen vraag.
+- **Let op:** de goedkeuring/feedback-flow die de klant zelf ziet ("Ideeën & Scripts" bij hen) blijft gewoon bestaan — dat draait op de `project_concepts`-tabel, die nog steeds gebruikt wordt door "Stuur naar klant" in het Contentsysteem. Enkel jouw manuele beheerscherm daarvoor is weg; de data en de klant-kant zijn onaangeroerd.
+
+Geen SQL, geen dataverlies — puur 2 tabbladen en de bijhorende ongebruikte code weggehaald.

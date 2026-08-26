@@ -6,9 +6,7 @@ import { renderAgenda, shiftWeek, resetWeek } from './agenda.js';
 import { renderUren, openNewTimeEntryModal } from './timeEntries.js';
 import { renderClients, openClientForm, openPortalContentEditor } from './clients.js';
 import { renderFinance } from './finance.js';
-import { renderScripting, openConceptForm, importScriptFile } from './scripting.js';
 import { renderDeadlines } from './deadlines.js';
-import { renderContent } from './content.js';
 import { renderContentStrategie } from './contentStrategie.js';
 import { renderEquipment, openEquipmentForm } from './equipment.js';
 import { renderClientView, openEditNameModal } from './clientView.js';
@@ -81,12 +79,6 @@ document.getElementById('client-edit-name-btn').addEventListener('click', () => 
 
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
 document.getElementById('new-time-entry-btn').addEventListener('click', openNewTimeEntryModal);
-document.getElementById('scripting-add-btn').addEventListener('click', () => openConceptForm(state.activeScriptingProjectId));
-document.getElementById('scripting-import-input').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) importScriptFile(state.activeScriptingProjectId, file);
-  e.target.value = '';
-});
 document.getElementById('new-client-btn').addEventListener('click', () => openClientForm());
 document.getElementById('portal-content-btn').addEventListener('click', () => openPortalContentEditor());
 document.getElementById('new-equipment-btn').addEventListener('click', () => openEquipmentForm());
@@ -108,9 +100,7 @@ function switchView(view) {
   if (view === 'uren') renderUren();
   if (view === 'clients') renderClients();
   if (view === 'finance') renderFinance();
-  if (view === 'scripting') renderScripting();
   if (view === 'deadlines') renderDeadlines();
-  if (view === 'content') renderContent();
   if (view === 'contentstrategie') renderContentStrategie();
   if (view === 'equipment') renderEquipment();
 }

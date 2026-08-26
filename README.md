@@ -562,9 +562,10 @@ Enkel voorkomt op smaller dan ~720px (telefoon/kleine tablet) — op laptop/desk
 
 ## Fase 29 — Klant-startscherm opgeruimd (nieuw)
 
-Feedback op een screenshot: het startscherm van de klant ("Mijn projecten") oogde rommelig, en vooral de bovenste foto stond veel te breed — logisch, want die brede banier (21:6, bedoeld voor een echte panoramafoto) toonde daar in de praktijk altijd het kléine ronde klantlogo, wat een hoop lege zwarte ruimte gaf.
+Feedback op een screenshot: het startscherm van de klant ("Mijn projecten") oogde rommelig, en vooral de bovenste foto stond veel te breed — logisch, want die brede banier (21:6, bedoeld voor een echte panoramafoto) toonde daar in de praktijk altijd het kléine ronde klantlogo, wat een hoop lege zwarte ruimte gaf. Een eerste, soberdere versie (klein rond logo naast "Welkom") voelde daarna weer te kaal aan — te weinig sfeer/beeld.
 
-- De brede banner is vervangen door een compact rond logo-badge naast "Welkom, [naam]" — past veel beter bij een logo, en het scherm oogt meteen rustiger doordat er geen groot leeg vlak meer bovenaan staat.
+- Nieuwe oplossing: een compacte header (150px) met een **zachte, sfeervolle gloed** op basis van het klantlogo zelf (geblurde, gekleurde achtergrond) met het scherpe logo prominent gecentreerd erbovenop — geeft merkgevoel en kleur zonder de "te breed en leeg"-fout van de eerste versie.
+- Heeft een klant nog geen eigen logo/foto? Dan valt het terug op een subtiele rood-getinte gloed (in lijn met de huisstijl), nooit een leeg zwart vlak.
 - Verder dezelfde inhoud (welkomstgids, projecttegels) maar met wat strakkere ruimte ertussen.
 
 Geen nieuwe SQL, geen configuratie nodig — puur een weergave-aanpassing.

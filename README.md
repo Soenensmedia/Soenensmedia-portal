@@ -550,3 +550,12 @@ Kleine verbetering aan de bestaande fotogalerij (tab Media & Archief): bij een o
 - **Draaiend laad-icoontje** op de "Uploaden"-knop terwijl foto's aan het uploaden zijn — de knop is dan ook even niet klikbaar, zodat je niet per ongeluk dubbel upload of te vroeg wegklikt.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 28 — Bugfix: navigatie onbruikbaar op smartphone (nieuw)
+
+Bij het doorlopen van het hele portaal op zoek naar verbeterpunten kwam dit naar boven: op een telefoonscherm (bv. iPhone-breedte) was de bovenbalk met tabbladen (Dashboard, Agenda, Deadlines, Uren, Klanten, Financiën, Scripting, Content, Equipment) veel breder dan het scherm. Er was geen manier om te scrollen naar de tabbladen die niet meer pasten — "Uren" en alles erna was op een telefoon gewoon onbereikbaar, en de hele pagina kreeg bovendien een onhandige zijwaartse scroll.
+
+- De tabbalk scrollt nu gewoon horizontaal (vinger opzij vegen) zodra ze niet meer past, met een zachte fade aan beide randen zodat duidelijk is dat er meer te zien is.
+- De rest van de pagina blijft nu netjes binnen het schermbreedte staan (geen zijwaartse scroll meer op de hele pagina).
+
+Enkel voorkomt op smaller dan ~720px (telefoon/kleine tablet) — op laptop/desktop verandert er niets. Geen nieuwe SQL, geen configuratie nodig.

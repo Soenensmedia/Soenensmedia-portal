@@ -3,6 +3,7 @@ import { escapeHtml, escapeAttr } from './util.js';
 import {
   fetchClients, fetchFinSettings,
   fetchClientContracts, createClientContract, updateClientContract, deleteClientContract,
+  notifyNewContract,
 } from './data.js';
 import {
   CONTRACT_PACKS, DEFAULT_FIELDS, contractArticlesHtml, fmtEUR, nextRef,
@@ -329,8 +330,11 @@ async function openOrderBuilder(existing) {
   const today = new Date();
   const in30 = new Date(today.getTime() + 30 * 86400000);
 
+  const clientProjects = state.projects.filter((p) => p.client_id === selectedClientId);
+
   const draft = {
     kind: 'opdracht',
+    project_id: existing?.project_id || null,
     ref: existing?.ref || nextOrderRef(),
     items: existing?.items?.length ? existing.items.map((it) => ({ ...it })) : tpl.items.map((it) => ({ ...it })),
     fields: {
@@ -377,6 +381,14 @@ async function openOrderBuilder(existing) {
         <div class="field"><label>Project</label><input type="text" id="ctf-projName" value="${escapeAttr(draft.fields.projName)}" placeholder="Naam van het project"></div>
         <div class="field"><label>Type</label><input type="text" id="ctf-projType" value="${escapeAttr(draft.fields.projType)}"></div>
       </div>
+      ${clientProjects.length ? `
+      <div class="field">
+        <label>Koppelen aan opdracht in het portaal (optioneel — bepaalt bij welk project dit bij de klant verschijnt)</label>
+        <select id="ctf-project">
+          <option value="">Geen koppeling</option>
+          ${clientProjects.map((p) => `<option value="${p.id}" ${p.id === draft.project_id ? 'selected' : ''}>${escapeHtml(p.title)}</option>`).join('')}
+        </select>
+      </div>` : ''}
       <div class="field-row">
         <div class="field"><label>Draaidag(en)</label><input type="text" id="ctf-shootDate" value="${escapeAttr(draft.fields.shootDate)}"></div>
         <div class="field"><label>Locatie</label><input type="text" id="ctf-location" value="${escapeAttr(draft.fields.location)}"></div>
@@ -505,6 +517,8 @@ async function openOrderBuilder(existing) {
     });
     draft.fields.tpl = document.getElementById('ctf-tpl').value;
     draft.fields.useDeposit = document.getElementById('ctf-useDeposit').checked ? 'true' : 'false';
+    const projectSel = document.getElementById('ctf-project');
+    draft.project_id = projectSel?.value || null;
   }
   function refreshPreview() {
     readDraft();
@@ -541,6 +555,7 @@ async function openOrderBuilder(existing) {
     const payload = {
       client_id: selectedClientId,
       kind: 'opdracht',
+      project_id: draft.project_id,
       ref: draft.ref,
       items: draft.items,
       fields: draft.fields,
@@ -665,6 +680,9 @@ function openContractViewer(contract) {
       closeModal();
       renderList();
       showToast('Verstuurd naar klant');
+      notifyNewContract(contract.id)
+        .then(() => showToast('Klant per mail verwittigd'))
+        .catch((err) => showToast('Kon klant niet mailen: ' + err.message, true));
     } catch (err) { showToast(err.message, true); }
   });
 }

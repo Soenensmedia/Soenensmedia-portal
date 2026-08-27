@@ -14,6 +14,9 @@ import { openContractById } from './contracts.js';
 const RETAINER_RENEWAL_WARNING_DAYS = 30;
 const ONDERHOUD_WARNING_DAYS = 30;
 const CONTENT_REMINDER_FROM_DAY = 15;
+const RETURN_WARNING_DAYS = 3;
+const CONCEPT_STALE_DAYS = 5;
+const SENT_UNSIGNED_DAYS = 7;
 const DEFAULT_AFGEROND_LIMIT = 5;
 let showAllAfgerond = false;
 
@@ -106,6 +109,19 @@ function attentionItems() {
     items.push({ type: 'equipment', id: eq.id, title: eq.naam, sub: 'Onderhoud', reason });
   });
 
+  (state.equipment || []).forEach((eq) => {
+    if (!eq.terug_verwacht_op || !eq.uitgeleend_aan) return;
+    const due = new Date(eq.terug_verwacht_op);
+    const daysLeft = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    if (daysLeft > RETURN_WARNING_DAYS) return;
+    const reason = daysLeft < 0
+      ? `Had terug moeten zijn op ${fmtDate(due)} (bij ${eq.uitgeleend_aan})`
+      : daysLeft === 0
+        ? `Vandaag terug verwacht (bij ${eq.uitgeleend_aan})`
+        : `Terug verwacht over ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dagen'} (bij ${eq.uitgeleend_aan})`;
+    items.push({ type: 'equipment', id: eq.id, title: eq.naam, sub: 'Terug te krijgen', reason });
+  });
+
   if (now.getDate() >= CONTENT_REMINDER_FROM_DAY) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     (state.clients || []).forEach((c) => {
@@ -120,9 +136,27 @@ function attentionItems() {
   }
 
   (state.allContracts || []).forEach((ct) => {
-    if (!isContractSignedUnseen(ct)) return;
     const client = state.clients.find((c) => c.id === ct.client_id);
-    items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title: (ct.kind === 'opdracht' ? ct.fields?.projName : ct.pack_name) || 'Contract', sub: client?.naam || 'Contract', reason: 'Ondertekend door klant' });
+    const title = (ct.kind === 'opdracht' ? ct.fields?.projName : ct.pack_name) || 'Contract';
+    const sub = client?.naam || 'Contract';
+
+    if (isContractSignedUnseen(ct)) {
+      items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title, sub, reason: 'Ondertekend door klant' });
+    }
+
+    if (ct.status === 'concept') {
+      const daysOld = Math.floor((now - new Date(ct.created_at)) / (1000 * 60 * 60 * 24));
+      if (daysOld >= CONCEPT_STALE_DAYS) {
+        items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title, sub, reason: `Nog niet verstuurd (${daysOld} dagen als concept)` });
+      }
+    }
+
+    if (ct.status === 'verzonden' && ct.sent_at) {
+      const daysWaiting = Math.floor((now - new Date(ct.sent_at)) / (1000 * 60 * 60 * 24));
+      if (daysWaiting >= SENT_UNSIGNED_DAYS) {
+        items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title, sub, reason: `Wacht al ${daysWaiting} dagen op ondertekening door klant` });
+      }
+    }
   });
 
   return items;

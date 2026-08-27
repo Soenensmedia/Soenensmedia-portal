@@ -717,7 +717,13 @@ function projectDetailHtml(p, feedback, photos, concepts) {
   const cover = getPortalPhotoUrl(p.cover_photo_path) || photos[0]?.url || clientPhotoUrlFor(p) || state.portalPhotoUrl;
   const facturen = state.clientFacturen.filter((f) => f.project_id === p.id);
   const offertes = state.clientOffertes.filter((o) => o.project_id === p.id);
-  const retainerContracts = (state.clientContracts || []).filter((c) => c.client_id === p.client_id && c.status !== 'concept');
+  const retainerContracts = (state.clientContracts || []).filter((c) => {
+    if (c.client_id !== p.client_id || c.status === 'concept') return false;
+    // Losse opdrachten die aan een specifiek project gekoppeld zijn tonen
+    // enkel daar (niet bij elke andere opdracht van dezelfde klant).
+    if (c.kind === 'opdracht' && c.project_id) return c.project_id === p.id;
+    return true;
+  });
   const generalFeedback = feedback.filter((f) => !f.concept_id);
 
   const hasDocumenten = !!(p.agreement_content || p.agreement_bestand_path) || facturen.length > 0 || offertes.length > 0 || retainerContracts.length > 0;

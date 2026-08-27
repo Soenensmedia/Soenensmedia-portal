@@ -753,3 +753,15 @@ In Supabase: SQL Editor → plak en run [`sql/029_contract_kind.sql`](sql/029_co
 
 ### Eenmalig instellen
 In Supabase: SQL Editor → plak en run [`sql/030_client_billing_info.sql`](sql/030_client_billing_info.sql).
+
+## Fase 46 — 5 opvolgpunten uit de doorlichting (op vraag)
+
+- **Contract blijft op "Concept" staan** — verschijnt nu na 5 dagen in "Aandacht nodig" ("Nog niet verstuurd (X dagen als concept)").
+- **Verstuurd, maar klant tekent niet** — verschijnt na 7 dagen in "Aandacht nodig" ("Wacht al X dagen op ondertekening").
+- **Losse opdracht koppelen aan een project** — bij het aanmaken van een losse opdracht kan je nu optioneel de bijhorende opdracht in het portaal selecteren. Gekoppeld? Dan verschijnt die offerte bij de klant enkel onder Documenten van dát project, niet bij al hun andere opdrachten. Niet gekoppeld (of oudere offertes van vóór deze fase) blijven zoals voorheen overal zichtbaar.
+- **Terugkeerdatum bij uitgeleende apparatuur** — nieuw veld "Terug verwacht op" bij Equipment. 3 dagen vooraf (of bij verlopen) verschijnt dit in "Aandacht nodig".
+- **Mail bij een nieuw contract** — de klant krijgt nu ook een mailtje zodra je een retainer-contract of offerte naar hen verstuurt (zelfde principe als bij nieuwe ideeën/scripts).
+
+### Eenmalig instellen
+1. In Supabase: SQL Editor → plak en run [`sql/031_contract_reminders_and_links.sql`](sql/031_contract_reminders_and_links.sql).
+2. In Supabase: Edge Functions → nieuwe functie **"notify-new-contract"** aanmaken, plak de inhoud van [`supabase/functions/notify-new-contract/index.ts`](supabase/functions/notify-new-contract/index.ts) → Deploy. Gebruikt dezelfde `BREVO_API_KEY`-secret als de andere mailfuncties.

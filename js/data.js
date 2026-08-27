@@ -107,6 +107,12 @@ export const notifyNewConcept = (projectId, title, type) =>
     return data;
   });
 
+export const notifyNewContract = (contractId) =>
+  sb.functions.invoke('notify-new-contract', { body: { contractId } }).then(({ data, error }) => {
+    if (error) throw error;
+    return data;
+  });
+
 export const notifyAdminFeedback = (projectId, message) =>
   sb.functions.invoke('notify-admin-feedback', { body: { projectId, message } }).then(({ data, error }) => {
     if (error) throw error;

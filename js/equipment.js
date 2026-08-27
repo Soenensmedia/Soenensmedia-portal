@@ -36,7 +36,7 @@ function renderTable() {
             <td>${escapeHtml(eq.categorie ?? '—')}</td>
             <td>${eq.onderhoud_datum ? fmtDate(new Date(eq.onderhoud_datum)) : '—'}</td>
             <td>${eq.verzekerd ? '<span class="badge-status goedgekeurd">Ja</span>' : '<span class="badge-status">Nee</span>'}</td>
-            <td>${eq.uitgeleend_aan ? escapeHtml(eq.uitgeleend_aan) : '<span class="hint-dim">In huis</span>'}</td>
+            <td>${eq.uitgeleend_aan ? `${escapeHtml(eq.uitgeleend_aan)}${eq.terug_verwacht_op ? ` <span class="hint-dim">(terug ${fmtDate(new Date(eq.terug_verwacht_op))})</span>` : ''}` : '<span class="hint-dim">In huis</span>'}</td>
             <td><button class="btn-icon equipment-delete" data-id="${eq.id}">✕</button></td>
           </tr>`).join('')}
       </tbody>
@@ -85,7 +85,10 @@ export function openEquipmentForm(eq = null) {
           Verzekerd
         </label>
       </div>
-      <div class="field"><label>Uitgeleend aan</label><input type="text" id="eq-uitgeleend" value="${escapeAttr(eq?.uitgeleend_aan ?? '')}" placeholder="Leeg = in huis"></div>
+      <div class="field-row">
+        <div class="field"><label>Uitgeleend aan</label><input type="text" id="eq-uitgeleend" value="${escapeAttr(eq?.uitgeleend_aan ?? '')}" placeholder="Leeg = in huis"></div>
+        <div class="field"><label>Terug verwacht op</label><input type="date" id="eq-terugverwacht" value="${eq?.terug_verwacht_op ?? ''}"></div>
+      </div>
       <div class="field"><label>Notities</label><textarea id="eq-notities" rows="2">${escapeHtml(eq?.notities ?? '')}</textarea></div>
       <div class="modal-actions">
         ${eq ? '<button type="button" class="btn btn-danger" id="eq-delete">Verwijderen</button>' : '<div></div>'}
@@ -122,6 +125,7 @@ export function openEquipmentForm(eq = null) {
       onderhoud_datum: document.getElementById('eq-onderhoud').value || null,
       verzekerd: document.getElementById('eq-verzekerd').checked,
       uitgeleend_aan: document.getElementById('eq-uitgeleend').value.trim() || null,
+      terug_verwacht_op: document.getElementById('eq-terugverwacht').value || null,
       notities: document.getElementById('eq-notities').value.trim() || null,
     };
     try {

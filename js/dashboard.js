@@ -122,7 +122,7 @@ function attentionItems() {
   (state.allContracts || []).forEach((ct) => {
     if (!isContractSignedUnseen(ct)) return;
     const client = state.clients.find((c) => c.id === ct.client_id);
-    items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title: ct.pack_name || 'Contract', sub: client?.naam || 'Contract', reason: 'Ondertekend door klant' });
+    items.push({ type: 'contract', id: ct.id, clientId: ct.client_id, title: (ct.kind === 'opdracht' ? ct.fields?.projName : ct.pack_name) || 'Contract', sub: client?.naam || 'Contract', reason: 'Ondertekend door klant' });
   });
 
   return items;

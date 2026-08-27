@@ -2,8 +2,8 @@ import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS
 import { escapeHtml, escapeAttr, renderConceptContentHtml } from './util.js';
 import { fetchProjects, fetchProjectFeedback, createFeedback, approveProject, listPhotos, fetchProjectConcepts, approveConcept, fetchPortalContent, signAgreement, fetchClients, fetchOwnProfile, updateOwnName, fetchFinFacturen, fetchFinOffertes, fetchAnyFinSettings, getFinFactuurUrl, getPortalPhotoUrl, getAgreementFileUrl, notifyAdminFeedback, fetchClientContracts, signClientContract } from './data.js';
 import { openModal, closeModal } from './modal.js';
-import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, generateRetainerContractPdf, downloadPdf } from './pdf.js';
-import { contractArticlesHtml } from './contractDoc.js';
+import { generateFactuurPdf, generateOffertePdf, generateAgreementCopyPdf, generateContractPdf, downloadPdf } from './pdf.js';
+import { contractDocHtml } from './contractDoc.js';
 import { initSignaturePad } from './signaturePad.js';
 import { showToast } from './toast.js';
 
@@ -154,7 +154,7 @@ function clientAttentionItems() {
 
   (state.clientContracts || []).forEach((ct) => {
     if (ct.status !== 'verzonden') return;
-    items.push({ type: 'contract', id: ct.id, title: ct.pack_name || 'Retainer-contract', reason: 'Contract wacht op jouw ondertekening' });
+    items.push({ type: 'contract', id: ct.id, title: (ct.kind === 'opdracht' ? ct.fields?.projName : ct.pack_name) || 'Contract', reason: 'Contract wacht op jouw ondertekening' });
   });
 
   return items;
@@ -365,10 +365,11 @@ async function refreshClientContracts() {
 }
 
 function openContractSignModal(contract) {
+  const isOrder = contract.kind === 'opdracht';
   openModal(`
-    <div class="modal-header"><h2>Contract ondertekenen</h2></div>
+    <div class="modal-header"><h2>${isOrder ? 'Opdracht bevestigen' : 'Contract ondertekenen'}</h2></div>
     <div class="doc-sheet" style="max-width:none; padding:20px; max-height:380px; overflow-y:auto;">
-      ${contractArticlesHtml(contract)}
+      ${contractDocHtml(contract)}
     </div>
     <form id="contract-sign-form" style="margin-top:16px;">
       <div class="doc-padwrap">
@@ -382,7 +383,9 @@ function openContractSignModal(contract) {
       </div>
       <label class="doc-agree">
         <input type="checkbox" id="cs-agree" required>
-        <span>Ik verklaar deze overeenkomst gelezen en goedgekeurd te hebben, en aanvaard het pakket, de prijs en de voorwaarden zoals hierboven beschreven.</span>
+        <span>${isOrder
+          ? 'Ik verklaar deze offerte gelezen en goedgekeurd te hebben en geef opdracht tot uitvoering.'
+          : 'Ik verklaar deze overeenkomst gelezen en goedgekeurd te hebben, en aanvaard het pakket, de prijs en de voorwaarden zoals hierboven beschreven.'}</span>
       </label>
       <button type="submit" class="btn btn-red">Ondertekenen</button>
     </form>
@@ -670,7 +673,7 @@ function contractTabHtml(p) {
 function retainerContractsSectionHtml(contracts) {
   return contracts.map((c) => `
     <div class="detail-list-item">
-      <span>${escapeHtml(c.pack_name || 'Retainer-contract')} — ${escapeHtml(c.ref || '')} <span class="badge-status ${c.status === 'ondertekend' ? 'goedgekeurd' : 'in_afwachting'}">${c.status === 'ondertekend' ? 'Ondertekend' : 'Wacht op ondertekening'}</span></span>
+      <span>${escapeHtml((c.kind === 'opdracht' ? c.fields?.projName : c.pack_name) || 'Contract')} — ${escapeHtml(c.ref || '')} <span class="badge-status ${c.status === 'ondertekend' ? 'goedgekeurd' : 'in_afwachting'}">${c.status === 'ondertekend' ? 'Ondertekend' : 'Wacht op ondertekening'}</span></span>
       ${c.status === 'ondertekend'
         ? `<button type="button" class="btn btn-ghost btn-small client-contract-pdf" data-id="${c.id}">Download</button>`
         : `<button type="button" class="btn btn-red btn-small client-contract-sign" data-id="${c.id}">Onderteken</button>`}
@@ -689,7 +692,7 @@ function documentenTabHtml(p, offertes, facturen, retainerContracts) {
       </div>` : ''}
     ${hasRetainer ? `
       <div class="detail-section" ${hasContract ? '' : 'style="border-top:none; padding-top:0;"'}>
-        <h3>Retainer-contract</h3>
+        <h3>Contract</h3>
         ${retainerContractsSectionHtml(retainerContracts)}
       </div>` : ''}
     ${hasFinance ? `
@@ -798,7 +801,7 @@ function wireProjectDetailEvents(p, photos, feedback, concepts) {
       const contract = state.clientContracts.find((c) => c.id === btn.dataset.id);
       if (!contract) return;
       try {
-        const doc = generateRetainerContractPdf(contract);
+        const doc = generateContractPdf(contract);
         downloadPdf(doc, `${(contract.ref || 'retainer-contract')}.pdf`);
       } catch (err) {
         showToast('Kon pdf niet genereren: ' + err.message, true);

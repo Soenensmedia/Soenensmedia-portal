@@ -218,3 +218,229 @@ export function contractArticlesHtml(contract) {
     </section>
   `;
 }
+
+// ═══════════════════════════════════════════════════════════
+// Losse opdracht (offerte & opdrachtbevestiging) — eenmalige
+// videoproductie, met lijnprijzen i.p.v. een vast maandbedrag.
+// ═══════════════════════════════════════════════════════════
+
+export const ORDER_TEMPLATES = {
+  brand: {
+    key: 'brand', label: 'Bedrijfsvideo', type: 'Bedrijfsvideo',
+    brief: 'Beschrijf hier kort wat we gaan maken: het doel van de video, de toon, waar ze gebruikt wordt en wat er zeker in moet. Deze omschrijving bepaalt de omvang van de opdracht.',
+    items: [
+      { d: 'Concept, scenario en voorbereiding', q: 1, u: 'forfait', r: 450 },
+      { d: 'Draaidag met camera, licht en geluid', q: 1, u: 'dag', r: 950 },
+      { d: 'Montage, kleurcorrectie en geluidsmix', q: 1, u: 'forfait', r: 850 },
+      { d: 'Muzieklicentie', q: 1, u: 'stuk', r: 75 },
+    ],
+    inc: ['Voorbereidend gesprek en scenario', 'Eén draaidag van maximaal 8 uur', 'Montage met kleurcorrectie, geluidsmix en muziek', 'Twee rondes feedback', 'Oplevering in 16:9 en 9:16'],
+    exc: ['Acteurs, modellen en voice-over', 'Locatiehuur en vergunningen', 'Drone-opnames', 'Ondertiteling in een vreemde taal', 'Meerwerk na de tweede feedbackronde'],
+  },
+  reels: {
+    key: 'reels', label: 'Reels-shoot', type: 'Reels-shoot',
+    brief: "Een halve draaidag waarop we in één keer een reeks korte verticale video's opnemen voor Instagram en TikTok, klaar om de komende weken uit te spelen.",
+    items: [
+      { d: 'Concept en shotlijst', q: 1, u: 'forfait', r: 250 },
+      { d: 'Halve draaidag op locatie', q: 1, u: 'halve dag', r: 550 },
+      { d: 'Montage per reel, inclusief ondertiteling', q: 6, u: 'stuk', r: 120 },
+    ],
+    inc: ['Voorbereiding en shotlijst', 'Halve draaidag van maximaal 4 uur', 'Montage met ondertiteling en muziek', 'Eén ronde feedback per reel', 'Oplevering in 9:16'],
+    exc: ['Advertentiebudget en plaatsing', 'Copywriting van de captions', 'Acteurs en modellen', 'Extra reels boven het afgesproken aantal'],
+  },
+  event: {
+    key: 'event', label: 'Event & aftermovie', type: 'Eventregistratie',
+    brief: 'Registratie van het event en een aftermovie van ongeveer 2 minuten, plus enkele korte clips voor sociale media dezelfde week nog.',
+    items: [
+      { d: 'Voorbereiding en afstemming met de organisatie', q: 1, u: 'forfait', r: 300 },
+      { d: 'Registratie ter plaatse', q: 1, u: 'dag', r: 1100 },
+      { d: 'Aftermovie van circa 2 minuten', q: 1, u: 'forfait', r: 750 },
+      { d: 'Korte clips voor sociale media', q: 3, u: 'stuk', r: 130 },
+    ],
+    inc: ['Voorbereidend overleg met de organisatie', 'Registratie ter plaatse met camera en geluid', 'Aftermovie met muzieklicentie', 'Eén ronde feedback', 'Oplevering binnen twee weken na het event'],
+    exc: ['Livestream en meercamera-regie', 'Overnachting en verplaatsing buiten België', 'Fotografie', 'Extra draaidagen'],
+  },
+  blank: {
+    key: 'blank', label: 'Blanco', type: 'Videoproductie',
+    brief: 'Beschrijf hier kort wat we gaan maken: het doel van de video, de toon, waar ze gebruikt wordt en wat er zeker in moet.',
+    items: [{ d: 'Omschrijving van de prestatie', q: 1, u: 'stuk', r: 0 }],
+    inc: ['Vul aan wat inbegrepen is'],
+    exc: ['Vul aan wat niet inbegrepen is'],
+  },
+};
+
+export const ORDER_DEFAULT_FIELDS = {
+  ...DEFAULT_FIELDS,
+  projName: '',
+  projType: ORDER_TEMPLATES.brand.type,
+  shootDate: 'Nader te bepalen',
+  location: 'Nader te bepalen',
+  delivery: 'Binnen 3 weken na de draaidag',
+  formats: '16:9 en 9:16, mp4',
+  brief: ORDER_TEMPLATES.brand.brief,
+  kmFree: 30,
+  base: 'Kortrijk',
+  kmRate: '0,45',
+  deposit: 40,
+};
+
+export function fmtEUR2(n) {
+  return '€ ' + (Number(n) || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function nextOrderRef() {
+  const year = new Date().getFullYear();
+  const n = Math.floor(1 + Math.random() * 998).toString().padStart(3, '0');
+  return `SM-${year}-${n}`;
+}
+
+function fo(fields, key) {
+  return escapeHtml(fields?.[key] ?? ORDER_DEFAULT_FIELDS[key] ?? '');
+}
+function linesFromField(fields, key) {
+  return (fields?.[key] || '').split('\n').map((l) => l.trim()).filter(Boolean);
+}
+
+export function orderTotals(contract) {
+  const fields = contract.fields || {};
+  const items = Array.isArray(contract.items) ? contract.items : [];
+  const subtotal = items.reduce((s, it) => s + (Number(it.q) || 0) * (Number(it.r) || 0), 0);
+  const discount = Number(fields.discount) || 0;
+  const afterDiscount = Math.max(0, subtotal - discount);
+  const vat = afterDiscount * 0.21;
+  const total = afterDiscount + vat;
+  const useDeposit = fields.useDeposit !== 'false';
+  const depositPct = Number(fields.deposit ?? ORDER_DEFAULT_FIELDS.deposit);
+  const deposit = useDeposit ? total * (depositPct / 100) : 0;
+  const balance = total - deposit;
+  return { subtotal, discount, afterDiscount, vat, total, useDeposit, depositPct, deposit, balance };
+}
+
+export function orderArticlesHtml(contract) {
+  const fields = contract.fields || {};
+  const items = Array.isArray(contract.items) ? contract.items : [];
+  const inc = linesFromField(fields, 'inc');
+  const exc = linesFromField(fields, 'exc');
+  const { subtotal, discount, vat, total, useDeposit, depositPct, deposit, balance } = orderTotals(contract);
+
+  return `
+    <header class="doc-masthead">
+      <div class="doc-brand"><span class="doc-dot"></span> SOENENS MEDIA</div>
+      <h1>Offerte &amp; opdrachtbevestiging</h1>
+      <p class="doc-sub">Eenmalige videoproductie</p>
+      <div class="doc-ref">
+        <span>Ref. ${escapeHtml(contract.ref || '—')}</span>
+        <span>Datum ${fo(fields, 'dateText') || escapeHtml(fmtStartText(contract.created_at || new Date()))}</span>
+        <span>Geldig tot ${fo(fields, 'validText') || '—'}</span>
+      </div>
+    </header>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">01</span> Partijen</h2>
+      <div class="doc-parties">
+        <div class="doc-party">
+          <span class="doc-role">De dienstverlener</span>
+          <span class="doc-line doc-name">${fo(fields, 'smName')}</span>
+          <span class="doc-line">${fo(fields, 'smAdr')}</span>
+          <span class="doc-line">BTW ${fo(fields, 'smVat')}</span>
+          <span class="doc-line">${fo(fields, 'smMail')}</span>
+        </div>
+        <div class="doc-party">
+          <span class="doc-role">De klant</span>
+          <span class="doc-line doc-name">${fo(fields, 'clName')}</span>
+          <span class="doc-line">${fo(fields, 'clAdr')}</span>
+          <span class="doc-line">BTW ${fo(fields, 'clVat')}</span>
+          <span class="doc-line">Contactpersoon: ${fo(fields, 'clContact')}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">02</span> De opdracht</h2>
+      <dl class="doc-meta">
+        <div><dt>Project</dt><dd>${fo(fields, 'projName') || '—'}</dd></div>
+        <div><dt>Type</dt><dd>${fo(fields, 'projType')}</dd></div>
+        <div><dt>Draaidag(en)</dt><dd>${fo(fields, 'shootDate')}</dd></div>
+        <div><dt>Locatie</dt><dd>${fo(fields, 'location')}</dd></div>
+        <div><dt>Oplevering</dt><dd>${fo(fields, 'delivery')}</dd></div>
+        <div><dt>Formaten</dt><dd>${fo(fields, 'formats')}</dd></div>
+      </dl>
+      ${fields.brief ? `<p class="doc-small" style="margin-top:12px">${escapeHtml(fields.brief)}</p>` : ''}
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">03</span> Prijs</h2>
+      <div class="doc-items-wrap">
+        <table class="doc-items">
+          <thead><tr><th>Omschrijving</th><th>Aantal</th><th>Eenheid</th><th>Prijs</th><th>Totaal</th></tr></thead>
+          <tbody>
+            ${items.map((it) => `<tr><td>${escapeHtml(it.d || '')}</td><td>${it.q || 0}</td><td>${escapeHtml(it.u || '')}</td><td>${fmtEUR2(it.r)}</td><td>${fmtEUR2((Number(it.q) || 0) * (Number(it.r) || 0))}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-totals">
+        <div><span>Subtotaal, excl. btw</span><span>${fmtEUR2(subtotal)}</span></div>
+        ${discount > 0 ? `<div><span>Korting</span><span>−${fmtEUR2(discount)}</span></div>` : ''}
+        <div><span>Btw 21%</span><span>${fmtEUR2(vat)}</span></div>
+        <div><span>Totaal, incl. btw</span><span>${fmtEUR2(total)}</span></div>
+        ${useDeposit ? `
+        <div><span>Voorschot ${depositPct}% bij bestelling</span><span>${fmtEUR2(deposit)}</span></div>
+        <div><span>Saldo bij oplevering</span><span>${fmtEUR2(balance)}</span></div>` : ''}
+      </div>
+      <p class="doc-small" style="margin-top:14px">Alle prijzen zijn in euro en exclusief 21% btw, tenzij anders vermeld. Verplaatsingen binnen een straal van ${fo(fields, 'kmFree')} km rond ${fo(fields, 'base')} zijn inbegrepen; daarbuiten wordt € ${fo(fields, 'kmRate')} per kilometer aangerekend.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">04</span> Wat is inbegrepen</h2>
+      <div class="doc-cols">
+        <div><h3 class="doc-col-h">Inbegrepen</h3><ul class="doc-deliver">${inc.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul></div>
+        <div><h3 class="doc-col-h">Niet inbegrepen</h3><ul class="doc-deliver doc-deliver-out">${exc.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul></div>
+      </div>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">05</span> Planning en medewerking</h2>
+      <p>De draaidag wordt in onderling overleg vastgelegd en minstens ${fo(fields, 'booking') || DEFAULT_FIELDS.booking} werkdagen vooraf bevestigd. De klant zorgt tijdig voor toegang tot de locatie, de personen en de producten die in beeld komen, en voor het merkmateriaal dat in de montage verwerkt moet worden.</p>
+      <p>Wordt een draaidag door de klant geannuleerd of verplaatst binnen achtenveertig uur voor aanvang, dan wordt die dag als gepresteerd aangerekend.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">06</span> Feedback en revisies</h2>
+      <p>De opdracht omvat ${fo(fields, 'revisions') || DEFAULT_FIELDS.revisions} rondes feedback op de montage. Feedback wordt gebundeld en schriftelijk aangeleverd binnen vijf werkdagen na oplevering van de versie. Blijft feedback binnen die termijn uit, dan geldt de versie als goedgekeurd.</p>
+      <p>Bijkomende rondes, of wijzigingen aan een reeds goedgekeurde versie of aan het afgesproken concept, worden aangerekend aan € ${fo(fields, 'hourly') || DEFAULT_FIELDS.hourly} per uur, excl. btw, na voorafgaande raming en schriftelijke goedkeuring door de klant.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">07</span> Betaling</h2>
+      <p>${useDeposit
+        ? `Bij bestelling is een voorschot van ${depositPct}% van het totaalbedrag verschuldigd. De opdracht wordt pas ingepland na ontvangst van dat voorschot. Het saldo wordt gefactureerd bij oplevering van de definitieve versie.`
+        : 'Er wordt geen voorschot gevraagd. Het volledige bedrag wordt gefactureerd bij oplevering van de definitieve versie.'}</p>
+      <p>Facturen zijn betaalbaar binnen ${fo(fields, 'payterm') || DEFAULT_FIELDS.payterm} kalenderdagen na factuurdatum.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">08</span> Meerwerk en annulering</h2>
+      <p>Werk buiten de omschrijving in artikel 2 en de lijnen in artikel 3 is meerwerk. Meerwerk wordt vooraf geraamd en pas na schriftelijke goedkeuring van de klant uitgevoerd.</p>
+      <p>${useDeposit
+        ? 'Annuleert de klant de opdracht na ondertekening, dan blijft het voorschot verworven als vergoeding voor de reeds gemaakte kosten en de gereserveerde tijd.'
+        : 'Annuleert de klant de opdracht na ondertekening, dan is 25% van het overeengekomen bedrag verschuldigd als vergoeding voor de reeds gemaakte kosten en de gereserveerde tijd.'} Annuleert de klant nadat de opnames zijn gestart, dan zijn alle reeds geleverde prestaties verschuldigd, verhoogd met 25% van het resterende bedrag.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">09</span> Rechten en gebruik</h2>
+      <p>Soenens Media draagt de vermogensrechten op de definitief opgeleverde en goedgekeurde video over aan de klant, voor onbeperkte duur en wereldwijd, voor gebruik op de eigen kanalen en in de eigen advertising van de klant. Die overdracht treedt pas in werking na volledige betaling.</p>
+      <p>Ruwe opnames en projectbestanden blijven eigendom van Soenens Media en worden niet meegeleverd, tenzij anders schriftelijk overeengekomen en tegen een afzonderlijke vergoeding. Het bronmateriaal wordt ${fo(fields, 'archive') || DEFAULT_FIELDS.archive} maanden na oplevering bewaard.</p>
+    </section>
+
+    <section class="doc-art">
+      <h2 class="doc-art-h"><span class="doc-n">10</span> Aansprakelijkheid en slotbepalingen</h2>
+      <p>De aansprakelijkheid van Soenens Media is beperkt tot de rechtstreekse schade en tot maximaal het bedrag van deze opdracht. Indirecte schade zoals winstderving, omzetverlies of reputatieschade komt niet voor vergoeding in aanmerking.</p>
+      <p>Op deze overeenkomst is uitsluitend het Belgisch recht van toepassing. Geschillen behoren tot de exclusieve bevoegdheid van de ondernemingsrechtbank van ${fo(fields, 'court') || DEFAULT_FIELDS.court}.</p>
+    </section>
+  `;
+}
+
+// Dispatcher — kiest de juiste documentopmaak op basis van contract.kind.
+export function contractDocHtml(contract) {
+  return contract.kind === 'opdracht' ? orderArticlesHtml(contract) : contractArticlesHtml(contract);
+}

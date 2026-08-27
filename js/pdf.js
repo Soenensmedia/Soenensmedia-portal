@@ -1,4 +1,4 @@
-import { contractArticlesHtml } from './contractDoc.js';
+import { contractDocHtml } from './contractDoc.js';
 
 const eur = (n) => '€ ' + (Math.round((n || 0) * 100) / 100).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDateNL = (iso) => (iso ? new Date(iso).toLocaleDateString('nl-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—');
@@ -249,7 +249,7 @@ export function generateAgreementCopyPdf(project, settings) {
   return doc;
 }
 
-export function generateRetainerContractPdf(contract) {
+export function generateContractPdf(contract) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const marginX = 20;
@@ -264,15 +264,15 @@ export function generateRetainerContractPdf(contract) {
   }
 
   // Contracttekst wordt geparsed uit dezelfde HTML als de portaal-weergave
-  // (contractArticlesHtml) — zo blijft de PDF altijd exact gesynchroniseerd
+  // (contractDocHtml) — zo blijft de PDF altijd exact gesynchroniseerd
   // met wat admin en klant op het scherm zien, zonder de tekst te dupliceren.
   const wrap = document.createElement('div');
-  wrap.innerHTML = contractArticlesHtml(contract);
+  wrap.innerHTML = contractDocHtml(contract);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(20);
-  doc.text('Retainerovereenkomst', marginX, y);
+  doc.text(contract.kind === 'opdracht' ? 'Offerte & opdrachtbevestiging' : 'Retainerovereenkomst', marginX, y);
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
@@ -297,7 +297,29 @@ export function generateRetainerContractPdf(contract) {
     doc.setFontSize(9.5);
     doc.setTextColor(40);
 
-    art.querySelectorAll(':scope > p, :scope > .doc-parties, :scope > .doc-pack-card, :scope > .doc-totals').forEach((block) => {
+    art.querySelectorAll(':scope > p, :scope > .doc-parties, :scope > .doc-pack-card, :scope > .doc-totals, :scope > .doc-meta, :scope > .doc-items-wrap, :scope > .doc-cols').forEach((block) => {
+      if (block.classList.contains('doc-items-wrap')) {
+        block.querySelectorAll('table.doc-items tbody tr').forEach((tr) => {
+          const [d, q, u, r, tot] = [...tr.children].map((td) => td.textContent.trim());
+          const text = `${d} — ${q} ${u} × ${r} = ${tot}`;
+          const lines = doc.splitTextToSize(text, 170);
+          ensureSpace(lines.length * 4.6 + 1);
+          doc.text(lines, marginX, y);
+          y += lines.length * 4.6 + 1;
+        });
+        y += 3;
+        return;
+      }
+      if (block.classList.contains('doc-meta')) {
+        block.querySelectorAll('dt').forEach((dt) => {
+          const text = `${dt.textContent.trim()}: ${dt.nextElementSibling?.textContent.trim() || ''}`;
+          ensureSpace(5.5);
+          doc.text(text, marginX, y);
+          y += 5;
+        });
+        y += 3;
+        return;
+      }
       const text = block.textContent.replace(/\s+/g, ' ').trim();
       if (!text) return;
       const lines = doc.splitTextToSize(text, 170);
@@ -313,7 +335,7 @@ export function generateRetainerContractPdf(contract) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11.5);
   doc.setTextColor(20);
-  doc.text('11 Handtekeningen', marginX, y);
+  doc.text(`11 ${contract.kind === 'opdracht' ? 'Akkoord' : 'Handtekeningen'}`, marginX, y);
   y += 10;
 
   const sigY = y;

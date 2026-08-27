@@ -729,3 +729,19 @@ Bij het ads-vinkje staan nu 2 losse velden, want dat zijn 2 heel verschillende b
 - **Advertentiebudget zelf** — puur informatief, het bedrag dat de klant rechtstreeks aan Meta/TikTok/... betaalt, expliciet vermeld als iets dat los staat van jouw vergoeding.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 44 — Losse opdracht (offerte & opdrachtbevestiging) naast retainer (nieuw)
+
+Niet elke klant wil een doorlopende retainer — soms is het gewoon één project. De Contracten-tab ondersteunt nu **2 soorten documenten**, gebaseerd op het 2de contract-artifact dat je liet nakijken:
+
+- **Retainer-contract** — zoals in Fase 38, doorlopende maandelijkse samenwerking.
+- **Losse opdracht** (nieuw) — een offerte & opdrachtbevestiging voor één project, met:
+  - 4 sjablonen om van te starten: Bedrijfsvideo, Reels-shoot, Event & aftermovie, of Blanco — elk met eigen standaard-lijnprijzen en inbegrepen/niet-inbegrepen lijsten, aanpasbaar na het kiezen.
+  - Een lijnprijzentabel (omschrijving, aantal, eenheid, prijs) waar je zelf regels aan toevoegt of verwijdert — het totaal, de btw en het voorschot (optioneel, met eigen percentage) worden live herberekend.
+  - Projectvelden (naam, type, draaidag, locatie, oplevering, formaten) en een briefing-tekst.
+  - Zelfde flow als de retainer daarna: zelf ondertekenen, versturen naar een gekoppelde klant, klant leest en tekent zelf, PDF met beide handtekeningen voor jullie beiden.
+
+Bij "+ Nieuw contract" kies je eerst welk type je wil aanmaken. Het type van een bestaand contract kan niet meer wijzigen na aanmaken (de velden zijn te verschillend) — bij twijfel gewoon een nieuwe aanmaken.
+
+### Eenmalig instellen
+In Supabase: SQL Editor → plak en run [`sql/029_contract_kind.sql`](sql/029_contract_kind.sql).

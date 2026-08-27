@@ -174,6 +174,10 @@ export function openClientForm(client = null) {
         <div class="field"><label>E-mail</label><input type="email" id="cl-email" value="${escapeAttr(client?.email ?? '')}"></div>
         <div class="field"><label>Telefoon</label><input type="text" id="cl-telefoon" value="${escapeAttr(client?.telefoon ?? '')}"></div>
       </div>
+      <div class="field-row">
+        <div class="field"><label>Adres</label><input type="text" id="cl-adres" value="${escapeAttr(client?.adres ?? '')}" placeholder="Straat en nummer, postcode gemeente"></div>
+        <div class="field"><label>BTW-nummer</label><input type="text" id="cl-btw" value="${escapeAttr(client?.btw_nummer ?? '')}" placeholder="BE 0000.000.000"></div>
+      </div>
       <div class="field"><label>Via wie kwam deze klant binnen?</label><input type="text" id="cl-referral" value="${escapeAttr(client?.referral_source ?? '')}" placeholder="Bv. mond-tot-mond, Instagram, oud-klant X..."></div>
 
       <div class="field">
@@ -234,6 +238,8 @@ export function openClientForm(client = null) {
       naam: document.getElementById('cl-naam').value.trim(),
       email: document.getElementById('cl-email').value.trim() || null,
       telefoon: document.getElementById('cl-telefoon').value.trim() || null,
+      adres: document.getElementById('cl-adres').value.trim() || null,
+      btw_nummer: document.getElementById('cl-btw').value.trim() || null,
       referral_source: document.getElementById('cl-referral').value.trim() || null,
       is_retainer: isRetainer,
       retainer_start: isRetainer ? (document.getElementById('cl-retainer-start').value || null) : null,

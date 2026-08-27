@@ -152,6 +152,8 @@ async function openRetainerBuilder(existing) {
       smMail: finSettings.contact_email || DEFAULT_FIELDS.smMail,
       clName: client?.naam || '',
       clContact: client?.naam || '',
+      clAdr: client?.adres || DEFAULT_FIELDS.clAdr,
+      clVat: client?.btw_nummer || DEFAULT_FIELDS.clVat,
       ...(existing?.fields || {}),
     },
   };
@@ -339,6 +341,8 @@ async function openOrderBuilder(existing) {
       smMail: finSettings.contact_email || ORDER_DEFAULT_FIELDS.smMail,
       clName: client?.naam || '',
       clContact: client?.naam || '',
+      clAdr: client?.adres || ORDER_DEFAULT_FIELDS.clAdr,
+      clVat: client?.btw_nummer || ORDER_DEFAULT_FIELDS.clVat,
       dateText: today.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' }),
       validText: in30.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' }),
       projType: tpl.type,
@@ -599,7 +603,7 @@ function openContractViewer(contract) {
     <div class="modal-actions">
       <button type="button" class="btn btn-danger" id="ctv-delete">Verwijderen</button>
       <div class="modal-actions-right">
-        ${contract.status === 'concept' ? '<button type="button" class="btn btn-ghost" id="ctv-edit">Bewerk</button>' : ''}
+        ${contract.status !== 'ondertekend' ? '<button type="button" class="btn btn-ghost" id="ctv-edit">Bewerk</button>' : ''}
         <button type="button" class="btn btn-ghost" id="ctv-pdf">PDF downloaden</button>
         ${contract.status === 'concept' && contract.sm_signed_at ? '<button type="button" class="btn btn-red" id="ctv-send">Versturen naar klant</button>' : ''}
         <button type="button" class="btn btn-ghost" id="ctv-close">Sluiten</button>

@@ -745,3 +745,11 @@ Bij "+ Nieuw contract" kies je eerst welk type je wil aanmaken. Het type van een
 
 ### Eenmalig instellen
 In Supabase: SQL Editor → plak en run [`sql/029_contract_kind.sql`](sql/029_contract_kind.sql).
+
+## Fase 45 — Contract bewerken na versturen + adres/BTW automatisch invullen (op vraag)
+
+- **Bewerken kon enkel bij status "Concept"** — eens verstuurd naar de klant, moest je alles opnieuw intikken voor een correctie. Nu kan je een contract bewerken zolang de klant nog niet getekend heeft (dus ook bij "Verzonden"). Eens de klant getekend heeft, is het definitief en niet meer te wijzigen.
+- **Klant-adres en BTW-nummer** zijn nu velden op de klantfiche (Klanten-tab). Vul je die één keer in, dan worden ze voortaan automatisch ingevuld in elk nieuw contract voor die klant — geen getypeoverwerk meer.
+
+### Eenmalig instellen
+In Supabase: SQL Editor → plak en run [`sql/030_client_billing_info.sql`](sql/030_client_billing_info.sql).

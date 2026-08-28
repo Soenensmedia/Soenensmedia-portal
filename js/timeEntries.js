@@ -5,8 +5,85 @@ import { openModal, closeModal } from './modal.js';
 import { showToast } from './toast.js';
 
 export function renderUren() {
+  renderTimerPanel();
   renderStats();
   renderTable();
+}
+
+// ── Live timer: start/stop per opdracht, overleeft een herlaad van de
+// pagina via localStorage (enkel 1 timer tegelijk, zoals bij echt werk).
+const TIMER_KEY = 'sm_running_timer';
+let timerInterval = null;
+
+function getRunningTimer() {
+  try {
+    const raw = localStorage.getItem(TIMER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setRunningTimer(timer) {
+  try {
+    if (timer) localStorage.setItem(TIMER_KEY, JSON.stringify(timer));
+    else localStorage.removeItem(TIMER_KEY);
+  } catch { /* privémodus o.i.d. */ }
+}
+
+function fmtElapsed(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const s = String(totalSeconds % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+function renderTimerPanel() {
+  const panel = document.getElementById('timer-panel');
+  if (!panel) return;
+  clearInterval(timerInterval);
+
+  const running = getRunningTimer();
+
+  if (!running) {
+    const projectOptions = state.projects
+      .map((p) => `<option value="${p.id}">${escapeHtml(p.client_name)} — ${escapeHtml(p.title)}</option>`)
+      .join('');
+    panel.innerHTML = `
+      <div class="timer-panel">
+        <select id="timer-project"><option value="">— Algemeen / business —</option>${projectOptions}</select>
+        <button type="button" class="btn btn-red btn-small" id="timer-start-btn">▶ Start</button>
+      </div>
+    `;
+    document.getElementById('timer-start-btn').addEventListener('click', () => {
+      const projectId = document.getElementById('timer-project').value || null;
+      setRunningTimer({ projectId, startedAt: Date.now() });
+      renderTimerPanel();
+    });
+    return;
+  }
+
+  const label = running.projectId ? (projectById(running.projectId)?.title || '—') : 'Algemeen / business';
+  panel.innerHTML = `
+    <div class="timer-panel timer-running">
+      <span class="timer-dot"></span>
+      <span class="timer-label">${escapeHtml(label)}</span>
+      <span class="timer-clock" id="timer-clock">${fmtElapsed(Date.now() - running.startedAt)}</span>
+      <button type="button" class="btn btn-ghost btn-small" id="timer-stop-btn">■ Stop</button>
+    </div>
+  `;
+  timerInterval = setInterval(() => {
+    const clock = document.getElementById('timer-clock');
+    if (clock) clock.textContent = fmtElapsed(Date.now() - running.startedAt);
+  }, 1000);
+
+  document.getElementById('timer-stop-btn').addEventListener('click', () => {
+    clearInterval(timerInterval);
+    setRunningTimer(null);
+    const hours = Math.max(0.01, Number(((Date.now() - running.startedAt) / 3600000).toFixed(2)));
+    openNewTimeEntryModal({ projectId: running.projectId, hours });
+  });
 }
 
 function sumHours(entries) {
@@ -67,20 +144,20 @@ function renderTable() {
   });
 }
 
-export function openNewTimeEntryModal() {
+export function openNewTimeEntryModal(prefill = {}) {
   const projectOptions = state.projects
-    .map((p) => `<option value="${p.id}">${escapeHtml(p.client_name)} — ${escapeHtml(p.title)}</option>`)
+    .map((p) => `<option value="${p.id}" ${prefill.projectId === p.id ? 'selected' : ''}>${escapeHtml(p.client_name)} — ${escapeHtml(p.title)}</option>`)
     .join('');
 
   openModal(`
     <div class="modal-header"><h2>Uren loggen</h2></div>
     <form id="time-form">
       <div class="field"><label>Project (optioneel)</label>
-        <select id="tf-project"><option value="">— Algemeen / business —</option>${projectOptions}</select>
+        <select id="tf-project"><option value="" ${!prefill.projectId ? 'selected' : ''}>— Algemeen / business —</option>${projectOptions}</select>
       </div>
       <div class="field-row">
         <div class="field"><label>Datum</label><input type="date" id="tf-date" value="${new Date().toISOString().slice(0, 10)}" required></div>
-        <div class="field"><label>Uren</label><input type="number" id="tf-hours" step="0.25" min="0.25" required></div>
+        <div class="field"><label>Uren</label><input type="number" id="tf-hours" step="0.01" min="0.01" value="${prefill.hours ?? ''}" required></div>
       </div>
       <div class="field"><label>Omschrijving</label><input type="text" id="tf-desc"></div>
       <div class="modal-actions">
@@ -90,6 +167,7 @@ export function openNewTimeEntryModal() {
     </form>
   `);
 
+  if (prefill.hours) document.getElementById('tf-desc').focus();
   document.getElementById('tf-cancel').addEventListener('click', closeModal);
   document.getElementById('time-form').addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -765,3 +765,13 @@ In Supabase: SQL Editor → plak en run [`sql/030_client_billing_info.sql`](sql/
 ### Eenmalig instellen
 1. In Supabase: SQL Editor → plak en run [`sql/031_contract_reminders_and_links.sql`](sql/031_contract_reminders_and_links.sql).
 2. In Supabase: Edge Functions → nieuwe functie **"notify-new-contract"** aanmaken, plak de inhoud van [`supabase/functions/notify-new-contract/index.ts`](supabase/functions/notify-new-contract/index.ts) → Deploy. Gebruikt dezelfde `BREVO_API_KEY`-secret als de andere mailfuncties.
+
+## Fase 47 — Start/stop-timer bij Uren (op vraag)
+
+Bovenaan Uren staat nu een live timer: kies een opdracht (of "Algemeen"), klik **▶ Start**, en er loopt een tikkende klok. Klik **■ Stop** en het "Uren loggen"-scherm opent automatisch, met de juiste opdracht en het berekende aantal uren al ingevuld — jij hoeft enkel nog een omschrijving toe te voegen en op te slaan.
+
+- Er kan maar 1 timer tegelijk lopen, zoals bij echt werk.
+- Een lopende timer overleeft een herlaad van de pagina (blijft tellen, ook als je tussendoor naar een ander tabblad gaat en terugkomt).
+- Komt gewoon terecht in dezelfde Uren-tabel als handmatig gelogde uren — telt dus mee in je uurtarief-berekening en overzichten.
+
+Geen nieuwe SQL, geen configuratie nodig.

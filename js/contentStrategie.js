@@ -8,6 +8,7 @@ import {
   fetchContentHookformules, createContentHookformule, deleteContentHookformule,
   fetchContentDraaidag, createContentDraaidag, deleteContentDraaidag,
   fetchContentBroll, createContentBroll, deleteContentBroll,
+  fetchContentInspiratie, createContentInspiratie, deleteContentInspiratie,
   fetchContentPlanner, saveContentPlannerRow, deleteContentPlannerRow,
   createConcept, notifyNewConcept,
 } from './data.js';
@@ -26,7 +27,7 @@ let selectedClientId = null;
 let activeSubTab = 'ideeen';
 let activeTagFilter = 'alles';
 
-let cache = { strategie: null, ideeen: [], scripts: [], hooks: [], draaidag: [], broll: [], planner: [] };
+let cache = { strategie: null, ideeen: [], scripts: [], hooks: [], draaidag: [], broll: [], planner: [], inspiratie: [] };
 
 export async function openContentStrategieForClient(clientId) {
   selectedClientId = clientId;
@@ -80,7 +81,7 @@ async function loadClientData() {
   const body = document.getElementById('cs-body');
   if (body) body.innerHTML = '<div class="empty-note">Laden...</div>';
   try {
-    const [strategie, ideeen, scripts, hooks, draaidag, broll, planner] = await Promise.all([
+    const [strategie, ideeen, scripts, hooks, draaidag, broll, planner, inspiratie] = await Promise.all([
       fetchContentStrategie(selectedClientId),
       fetchContentIdeeen(selectedClientId),
       fetchContentScripts(selectedClientId),
@@ -88,8 +89,9 @@ async function loadClientData() {
       fetchContentDraaidag(selectedClientId),
       fetchContentBroll(selectedClientId),
       fetchContentPlanner(selectedClientId),
+      fetchContentInspiratie(selectedClientId),
     ]);
-    cache = { strategie, ideeen, scripts, hooks, draaidag, broll, planner };
+    cache = { strategie, ideeen, scripts, hooks, draaidag, broll, planner, inspiratie };
   } catch (err) {
     if (body) body.innerHTML = `<div class="empty-note">Kon data niet laden: ${escapeHtml(err.message)}</div>`;
     return;
@@ -99,6 +101,7 @@ async function loadClientData() {
 
 const SUBTABS = [
   { key: 'ideeen', label: 'Ideeën' },
+  { key: 'inspiratie', label: 'Inspiratie' },
   { key: 'scripts', label: 'Scripts' },
   { key: 'hooks', label: 'Hooks' },
   { key: 'draaidag', label: 'Draaidag' },
@@ -129,6 +132,7 @@ function renderPanel() {
   const panel = document.getElementById('cs-panel');
   if (!panel) return;
   if (activeSubTab === 'ideeen') return renderIdeeenPanel(panel);
+  if (activeSubTab === 'inspiratie') return renderInspiratiePanel(panel);
   if (activeSubTab === 'scripts') return renderScriptsPanel(panel);
   if (activeSubTab === 'hooks') return renderHooksPanel(panel);
   if (activeSubTab === 'draaidag') return renderDraaidagPanel(panel);
@@ -206,7 +210,7 @@ function ideeCardHtml(idee) {
     </div>`;
 }
 
-function openIdeeForm(existing = null) {
+function openIdeeForm(existing = null, prefillLink = null) {
   openModal(`
     <div class="modal-header"><h2>${existing ? 'Idee bewerken' : 'Idee toevoegen'}</h2></div>
     <form id="cs-idee-form">
@@ -221,7 +225,7 @@ function openIdeeForm(existing = null) {
         <div class="field"><label>Lengte</label><input type="text" id="ci-lengte" placeholder="3 + 3×8 + 4 = 31 sec" value="${escapeAttr(existing?.lengte || '')}"></div>
         <div class="field"><label>Heroshot</label><input type="text" id="ci-heroshot" value="${escapeAttr(existing?.heroshot || '')}"></div>
       </div>
-      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="ci-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || '')}"></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="ci-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || prefillLink || '')}"></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -260,6 +264,92 @@ function openIdeeForm(existing = null) {
         renderPanel();
         showToast('Idee toegevoegd');
       }
+    } catch (err) { showToast(err.message, true); }
+  });
+}
+
+// ── Inspiratie ───────────────────────────────────────────
+function renderInspiratiePanel(panel) {
+  panel.innerHTML = `
+    <div class="section-header-row">
+      <p class="cs-lead">Instagram-links die je later wil uitwerken tot een eigen idee of script.</p>
+      <button type="button" class="btn btn-red btn-small" id="cs-inspiratie-add">+ Link</button>
+    </div>
+    <div class="cs-cards">
+      ${cache.inspiratie.length ? cache.inspiratie.map(inspiratieCardHtml).join('') : '<div class="empty-note">Nog geen inspiratie opgeslagen.</div>'}
+    </div>
+  `;
+  panel.querySelectorAll('.cs-insp-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Deze link verwijderen?')) return;
+      try {
+        await deleteContentInspiratie(btn.dataset.id);
+        cache.inspiratie = cache.inspiratie.filter((i) => i.id !== btn.dataset.id);
+        renderInspiratiePanel(panel);
+        showToast('Link verwijderd');
+      } catch (err) { showToast(err.message, true); }
+    });
+  });
+  panel.querySelectorAll('.cs-insp-to-idee').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = cache.inspiratie.find((i) => i.id === btn.dataset.id);
+      if (item) openIdeeForm(null, item.link);
+    });
+  });
+  panel.querySelectorAll('.cs-insp-to-script').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = cache.inspiratie.find((i) => i.id === btn.dataset.id);
+      if (item) openScriptForm(null, item.link);
+    });
+  });
+  document.getElementById('cs-inspiratie-add')?.addEventListener('click', () => openInspiratieForm());
+}
+
+function inspiratieCardHtml(item) {
+  return `
+    <div class="cs-idea">
+      <a class="cs-link" href="${escapeAttr(item.link)}" target="_blank" rel="noopener">↗ ${escapeHtml(item.link)}</a>
+      ${item.notities ? `<p class="cs-body">${escapeHtml(item.notities)}</p>` : ''}
+      <div class="cs-idea-actions">
+        <button type="button" class="btn btn-red btn-small cs-insp-to-idee" data-id="${item.id}">→ Nieuw idee</button>
+        <button type="button" class="btn btn-ghost btn-small cs-insp-to-script" data-id="${item.id}">→ Nieuw script</button>
+        <button type="button" class="btn-icon cs-insp-delete" data-id="${item.id}">✕</button>
+      </div>
+    </div>`;
+}
+
+function openInspiratieForm() {
+  openModal(`
+    <div class="modal-header"><h2>Link toevoegen</h2></div>
+    <form id="cs-inspiratie-form">
+      <div class="field"><label>Instagram-link</label><input type="url" id="cinsp-link" required placeholder="https://instagram.com/reel/..."></div>
+      <div class="field"><label>Notities (optioneel)</label><textarea id="cinsp-notities" rows="2" placeholder="Waarom is dit interessant?"></textarea></div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="cinsp-cancel">Annuleren</button>
+          <button type="submit" class="btn btn-red">Toevoegen</button>
+        </div>
+      </div>
+    </form>
+  `);
+  document.getElementById('cinsp-cancel').addEventListener('click', closeModal);
+  document.getElementById('cs-inspiratie-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      client_id: selectedClientId,
+      link: document.getElementById('cinsp-link').value.trim(),
+      notities: document.getElementById('cinsp-notities').value.trim() || null,
+    };
+    try {
+      const created = await createContentInspiratie(payload);
+      cache.inspiratie.unshift(created);
+      closeModal();
+      renderPanel();
+      showToast('Link toegevoegd');
     } catch (err) { showToast(err.message, true); }
   });
 }
@@ -329,23 +419,23 @@ function scriptCardHtml(script) {
     </div>`;
 }
 
-function shotsToLines(shots) {
-  return (Array.isArray(shots) ? shots : [])
-    .map((s) => [s.tijd, s.beeld, s.tekst_in_beeld, s.gesproken].map((p) => p || '').join(' | '))
-    .join('\n');
-}
-
-function openScriptForm(existing = null) {
+function openScriptForm(existing = null, prefillLink = null) {
+  const shotsDraft = (Array.isArray(existing?.shots) ? existing.shots : []).map((s) => ({ ...s }));
   openModal(`
     <div class="modal-header"><h2>${existing ? 'Script bewerken' : 'Script toevoegen'}</h2></div>
     <form id="cs-script-form">
       <div class="field"><label>Titel</label><input type="text" id="cscr-titel" required value="${escapeAttr(existing?.titel || '')}"></div>
       <div class="field"><label>Meta</label><input type="text" id="cscr-meta" placeholder="Bereik ±35 sec, blok D, 11u30" value="${escapeAttr(existing?.meta || '')}"></div>
-      <div class="field"><label>Shots (1 per regel: tijd | beeld | tekst in beeld | gesproken)</label>
-        <textarea id="cscr-shots" rows="6" placeholder="0:00 | De drie wagens samen | €15.000. Drie wagens. | Vijftienduizend euro...">${escapeHtml(shotsToLines(existing?.shots))}</textarea>
+      <div class="field">
+        <label>Shots</label>
+        <table class="log-table cscr-shots-table">
+          <thead><tr><th>Tijd</th><th>Beeld</th><th>Tekst in beeld</th><th>Gesproken</th><th></th></tr></thead>
+          <tbody id="cscr-shots-body"></tbody>
+        </table>
+        <button type="button" class="btn btn-ghost btn-small" id="cscr-shot-add" style="margin-top:8px;">+ Shot toevoegen</button>
       </div>
       <div class="field"><label>Regie</label><textarea id="cscr-regie" rows="2">${escapeHtml(existing?.regie || '')}</textarea></div>
-      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="cscr-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || '')}"></div>
+      <div class="field"><label>Voorbeeldlink (bv. Instagram-reel)</label><input type="url" id="cscr-voorbeeld" placeholder="https://instagram.com/reel/..." value="${escapeAttr(existing?.voorbeeld_link || prefillLink || '')}"></div>
       <div class="modal-actions">
         <div></div>
         <div class="modal-actions-right">
@@ -355,13 +445,45 @@ function openScriptForm(existing = null) {
       </div>
     </form>
   `);
+
+  function renderShotRows() {
+    document.getElementById('cscr-shots-body').innerHTML = shotsDraft.map((s, i) => `
+      <tr data-i="${i}">
+        <td><input type="text" class="cs-shot-tijd" value="${escapeAttr(s.tijd || '')}" style="width:70px;" placeholder="0:00"></td>
+        <td><input type="text" class="cs-shot-beeld" value="${escapeAttr(s.beeld || '')}" placeholder="Wat is er te zien"></td>
+        <td><input type="text" class="cs-shot-osd" value="${escapeAttr(s.tekst_in_beeld || '')}" placeholder="Tekst op scherm"></td>
+        <td><input type="text" class="cs-shot-say" value="${escapeAttr(s.gesproken || '')}" placeholder="Voice-over"></td>
+        <td><button type="button" class="btn-icon cs-shot-remove" data-i="${i}">✕</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" class="empty-note">Nog geen shots.</td></tr>';
+    document.getElementById('cscr-shots-body').querySelectorAll('.cs-shot-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        shotsDraft.splice(Number(btn.dataset.i), 1);
+        renderShotRows();
+      });
+    });
+  }
+  function readShotsFromDom() {
+    [...document.querySelectorAll('#cscr-shots-body tr[data-i]')].forEach((tr, i) => {
+      shotsDraft[i] = {
+        tijd: tr.querySelector('.cs-shot-tijd').value.trim() || null,
+        beeld: tr.querySelector('.cs-shot-beeld').value.trim() || null,
+        tekst_in_beeld: tr.querySelector('.cs-shot-osd').value.trim() || null,
+        gesproken: tr.querySelector('.cs-shot-say').value.trim() || null,
+      };
+    });
+  }
+  renderShotRows();
+  document.getElementById('cscr-shot-add').addEventListener('click', () => {
+    readShotsFromDom();
+    shotsDraft.push({ tijd: '', beeld: '', tekst_in_beeld: '', gesproken: '' });
+    renderShotRows();
+  });
+
   document.getElementById('cscr-cancel').addEventListener('click', closeModal);
   document.getElementById('cs-script-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const shots = document.getElementById('cscr-shots').value.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
-      const [tijd, beeld, tekst_in_beeld, gesproken] = line.split('|').map((p) => p?.trim() || null);
-      return { tijd, beeld, tekst_in_beeld, gesproken };
-    });
+    readShotsFromDom();
+    const shots = shotsDraft.filter((s) => s.tijd || s.beeld || s.tekst_in_beeld || s.gesproken);
     const payload = {
       client_id: selectedClientId,
       titel: document.getElementById('cscr-titel').value.trim(),

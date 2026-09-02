@@ -416,6 +416,13 @@ export const createContentBroll = (payload) =>
 export const deleteContentBroll = (id) =>
   sb.from('content_broll').delete().eq('id', id).then(unwrap);
 
+export const fetchContentInspiratie = (clientId) =>
+  sb.from('content_inspiratie').select('*').eq('client_id', clientId).order('created_at', { ascending: false }).then(unwrap);
+export const createContentInspiratie = (payload) =>
+  sb.from('content_inspiratie').insert(payload).select().single().then(unwrap);
+export const deleteContentInspiratie = (id) =>
+  sb.from('content_inspiratie').delete().eq('id', id).then(unwrap);
+
 export const fetchContentPlanner = (clientId) =>
   sb.from('content_planner').select('*').eq('client_id', clientId).order('created_at').then(unwrap);
 export const saveContentPlannerRow = (id, payload) =>

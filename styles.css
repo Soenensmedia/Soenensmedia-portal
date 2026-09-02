@@ -251,6 +251,9 @@ table.log-table { width: 100%; border-collapse: collapse; background: var(--pane
 table.log-table th, table.log-table td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
 table.log-table th { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 table.log-table tr:last-child td { border-bottom: none; }
+table.cscr-shots-table td { padding: 6px 8px; }
+table.cscr-shots-table input { width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 6px 8px; font-size: 12.5px; }
+table.cscr-shots-table input:focus { outline: none; border-color: var(--red); }
 
 /* ══════════ MODALS ══════════ */
 .modal-backdrop {

@@ -775,3 +775,13 @@ Bovenaan Uren staat nu een live timer: kies een opdracht (of "Algemeen"), klik *
 - Komt gewoon terecht in dezelfde Uren-tabel als handmatig gelogde uren — telt dus mee in je uurtarief-berekening en overzichten.
 
 Geen nieuwe SQL, geen configuratie nodig.
+
+## Fase 48 — Shots lijn per lijn bewerken + Instagram-inspiratie-tab (op vraag)
+
+Twee uitbreidingen bij Contentsysteem:
+
+- **Scripts: shots bewerken als losse rijen.** Bij een script bewerk je de shots nu niet meer als 1 grote tekstvak met `|`-tekens, maar als een tabel: elke shot is een eigen rij met tijd/beeld/tekst-in-beeld/gesproken als aparte velden, met een **"+ Shot toevoegen"**-knop en een ✕ om een rij te verwijderen.
+- **Nieuwe tab "Inspiratie".** Sla Instagram-links op per klant (link + optionele notitie). Vanuit zo'n link kan je met 1 klik **"→ Nieuw idee"** of **"→ Nieuw script"** starten — dat opent meteen het bijhorende formulier met de link al ingevuld, klaar om verder uit te werken.
+
+### Eenmalig instellen
+1. In Supabase: SQL Editor → plak en run [`sql/033_content_inspiratie.sql`](sql/033_content_inspiratie.sql).

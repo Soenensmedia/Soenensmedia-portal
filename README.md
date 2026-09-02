@@ -785,3 +785,9 @@ Twee uitbreidingen bij Contentsysteem:
 
 ### Eenmalig instellen
 1. In Supabase: SQL Editor → plak en run [`sql/033_content_inspiratie.sql`](sql/033_content_inspiratie.sql).
+
+## Fase 49 — Overzicht "Verstuurd naar klant" per opdracht (fix)
+
+Als je bij Contentsysteem een idee/script naar een klant stuurde, was er nergens meer terug te zien wélke dit waren — de melding zei wel "te zien via Ideeën & Scripts op die opdracht", maar die sectie bestond niet in het opdracht-detailvenster. Opgelost: opdracht openen → tab **"Activiteit & Feedback"** → nieuwe sectie **"Verstuurd naar klant"** toont alles wat ooit naar die opdracht is gestuurd, met type (Idee/Script), status (In afwachting / Goedgekeurd / Aanpassing gevraagd) en verstuurdatum. Een ✕ ernaast verwijdert een item (de klant ziet het dan niet meer).
+
+Geen nieuwe SQL, geen configuratie nodig.

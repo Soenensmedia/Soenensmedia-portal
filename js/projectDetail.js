@@ -1,6 +1,6 @@
-import { state, STATUS_ORDER, STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
+import { state, STATUS_ORDER, STATUS_LABELS, CONCEPT_TYPE_LABELS, CONCEPT_STATUS_LABELS, fmtDate, fmtDateShort, projectById } from './state.js';
 import { escapeHtml, escapeAttr } from './util.js';
-import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, deleteAllPhotos, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject, uploadProjectCover, getPortalPhotoUrl, deletePortalPhoto } from './data.js';
+import { updateProject, deleteProject, linkClientByEmail, fetchProject, uploadPhoto, listPhotos, deletePhoto, deleteAllPhotos, notifyStatusChange, uploadAgreementFile, getAgreementFileUrl, deleteAgreementFile, fetchPortalContent, fetchFinSettings, fetchProjectFeedback, createFeedback, inviteClient, createProject, uploadProjectCover, getPortalPhotoUrl, deletePortalPhoto, deleteConcept } from './data.js';
 import { openModal, closeModal } from './modal.js';
 import { renderDashboard } from './dashboard.js';
 import { showToast } from './toast.js';
@@ -18,6 +18,9 @@ export function openProjectDetail(id) {
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
   const linkedEntries = state.timeEntries.filter((t) => t.project_id === id);
   const totalHours = linkedEntries.reduce((sum, t) => sum + Number(t.hours), 0);
+  const sentConcepts = (state.allConcepts || [])
+    .filter((c) => c.project_id === id)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   openModal(`
     <div class="modal-header"><h2>Opdracht</h2></div>
@@ -148,6 +151,24 @@ export function openProjectDetail(id) {
             <input type="text" id="pd-feedback-input" placeholder="Antwoord aan de klant...">
             <button type="button" id="pd-feedback-send" class="btn btn-red btn-small">Versturen</button>
           </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Verstuurd naar klant (${sentConcepts.length})</h3>
+          ${sentConcepts.length
+            ? sentConcepts.map((c) => `
+              <div class="detail-list-item concept-row">
+                <span>
+                  <span class="badge-status ${c.type}">${CONCEPT_TYPE_LABELS[c.type] ?? c.type}</span>
+                  <span class="badge-status ${c.status}">${CONCEPT_STATUS_LABELS[c.status] ?? c.status}</span>
+                  ${escapeHtml(c.title)}
+                </span>
+                <span class="concept-row-actions">
+                  ${fmtDate(new Date(c.created_at))}
+                  <button type="button" class="btn-icon pd-concept-delete" data-id="${c.id}" title="Verwijderen">✕</button>
+                </span>
+              </div>`).join('')
+            : '<div class="empty-note">Nog niets verstuurd voor deze opdracht — dat doe je via Contentsysteem &rarr; Ideeën of Scripts &rarr; "Stuur naar klant".</div>'}
         </div>
 
         <div class="detail-section">
@@ -313,6 +334,22 @@ export function openProjectDetail(id) {
 
   refreshPhotoGrid(id);
   refreshFeedbackList(id);
+
+  document.querySelectorAll('.pd-concept-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (!confirm('Dit verstuurde item verwijderen? De klant ziet het dan niet meer.')) return;
+      try {
+        await deleteConcept(btn.dataset.id);
+        state.allConcepts = state.allConcepts.filter((c) => c.id !== btn.dataset.id);
+        closeModal();
+        openProjectDetail(id);
+        showToast('Verwijderd');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+  });
 
   async function sendAdminFeedback() {
     const input = document.getElementById('pd-feedback-input');
